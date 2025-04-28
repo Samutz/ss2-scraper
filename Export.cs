@@ -655,32 +655,26 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         foreach (var prop in actor.Properties ?? [])
         {
             // not gonna bother looking up their forms
-            switch (prop.ActorValue.ToString())
+            switch (prop.ActorValue.FormKey.ToString())
             {
                 case "0002C2:Fallout4.esm": // Strength
                     character.special[0] = (int) prop.Value;
                     continue;
-
                 case "0002C3:Fallout4.esm": // Perception
                     character.special[1] = (int) prop.Value;
                     continue;
-
                 case "0002C4:Fallout4.esm": // Endurace
                     character.special[2] = (int) prop.Value;
                     continue;
-
                 case "0002C5:Fallout4.esm": // Charisma
                     character.special[3] = (int) prop.Value;
                     continue;
-
                 case "0002C6:Fallout4.esm": // Intelligence
                     character.special[4] = (int) prop.Value;
                     continue;
-
                 case "0002C7:Fallout4.esm": // Agility
                     character.special[5] = (int) prop.Value;
                     continue;
-
                 case "0002C8:Fallout4.esm": // Luck
                     character.special[6] = (int) prop.Value;
                     continue;
