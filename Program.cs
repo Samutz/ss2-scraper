@@ -18,6 +18,7 @@ class Program
     {
         public string Api_key { get; set; } = string.Empty;
         public string Base_url { get; set; } = string.Empty;
+        public bool Ignore_ssl { get; set; } = false;
     }
 
     static async Task Main(string[] args)
@@ -88,7 +89,7 @@ class Program
         Uri base_url = new(config.Base_url);
 
         HttpClientHandler handler = new();
-        if (base_url.Host == "localhost")
+        if (config?.Ignore_ssl ?? false)
         {
             Console.WriteLine($"setting ignore SSL");
             handler = new HttpClientHandler
@@ -108,7 +109,7 @@ class Program
         using StringContent jsonContent = new(
             JsonConvert.SerializeObject(new
             {
-                api_key = config.Api_key,
+                api_key = config?.Api_key,
                 content = output
             }),
             Encoding.UTF8,
