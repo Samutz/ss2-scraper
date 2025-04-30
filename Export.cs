@@ -249,37 +249,37 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             if (linkCache.TryResolve<IPlacedObjectGetter>(formKey.Value, out var objRef)) continue; // skip objectrefs
             if (linkCache.TryResolve<IGlobalGetter>(formKey.Value, out var globalVar)) continue; // skip globals
 
-            if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem)) // unlockable miscItems
+            if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem))
             {
                 IndexMiscItem(miscItem);
                 continue;
             }
 
-            if (linkCache.TryResolve<IWeaponGetter>(formKey.Value, out var weapon)) // building plans, building skins, etc
+            if (linkCache.TryResolve<IWeaponGetter>(formKey.Value, out var weapon))
             {
                 IndexWeapon(weapon);
                 continue;
             }
 
-            if (linkCache.TryResolve<IArmorGetter>(formKey.Value, out var armor)) // flags
+            if (linkCache.TryResolve<IArmorGetter>(formKey.Value, out var armor))
             {
                 IndexArmor(armor);
                 continue;
             }
 
-            if (linkCache.TryResolve<IActivatorGetter>(formKey.Value, out var activator)) // flags
+            if (linkCache.TryResolve<IActivatorGetter>(formKey.Value, out var activator))
             {
                 IndexActivator(activator);
                 continue;
             }
 
-            if (linkCache.TryResolve<IBookGetter>(formKey.Value, out var book)) // flags
+            if (linkCache.TryResolve<IBookGetter>(formKey.Value, out var book))
             {
                 IndexBook(book);
                 continue;
             }
 
-            if (linkCache.TryResolve<IQuestGetter>(formKey.Value, out var quest)) // flags
+            if (linkCache.TryResolve<IQuestGetter>(formKey.Value, out var quest))
             {
                 IndexQuest(quest);
                 continue;
