@@ -56,10 +56,12 @@ class Program
         settings.AddMutagenConverters();
 
         // check config.json first
-        if (!File.Exists("config.json")) throw new ArgumentException("Json config missing");
-        string configJson = File.ReadAllText("config.json");
+        string exePath = AppDomain.CurrentDomain.BaseDirectory;
+        string configPath = Path.Combine(exePath, "config.json");
+        if (!File.Exists(configPath)) throw new ArgumentException("Config file is missing");
+        string configJson = File.ReadAllText(configPath);
         ApiConfig config = JsonConvert.DeserializeObject<ApiConfig>(configJson) ?? new ApiConfig();
-        if (config.Api_key.Equals("") || config.Base_url.Equals("")) throw new ArgumentException("Json config missing");
+        if (config.Api_key.Equals("") || config.Base_url.Equals("")) throw new ArgumentException("Config file is empty");
 
         (var mod, var linkCache) = LoadMod(filePath);
         
