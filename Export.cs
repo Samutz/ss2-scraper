@@ -14,6 +14,14 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     private readonly ILinkCache linkCache = linkCache;
     private List<BuildingPlanSkin> buildingPlanSkinCache = []; 
 
+    public class ModMetadata
+    {
+        public string pluginFile = "";
+        public int nexusId = 0;
+        public string name = "";
+        public string version = "";
+    }
+
     public class Output
     {
         public string name = "";
@@ -21,6 +29,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public bool isLight;
         public List<string> masters = [];
         public int totalItems = 0;
+        public ModMetadata? metadata;
         public List<BuildingPlan> buildingPlans = [];
         public List<SimpleObject> dynamicFlags = [];
         public List<SimpleObject> foundations = [];
