@@ -55,14 +55,6 @@ class Program
         var settings = new JsonSerializerSettings();
         settings.AddMutagenConverters();
 
-        // check config.json first
-        string exePath = AppDomain.CurrentDomain.BaseDirectory;
-        string configPath = Path.Combine(exePath, "config.json");
-        if (!File.Exists(configPath)) throw new ArgumentException("Config file is missing");
-        string configJson = File.ReadAllText(configPath);
-        ApiConfig config = JsonConvert.DeserializeObject<ApiConfig>(configJson) ?? new ApiConfig();
-        if (config.Api_key.Equals("") || config.Base_url.Equals("")) throw new ArgumentException("Config file is empty");
-
         (var mod, var linkCache) = LoadMod(filePath);
         
         string pluginFile = Path.GetFileName(filePath) ?? throw new ArgumentException("Invalid plugin path");
@@ -84,6 +76,17 @@ class Program
 
         if (doUpload)
         {
+            string configPath = "config.json";
+            if (!File.Exists(configPath)) // check for local path when debugging first
+            {
+                string exePath = AppDomain.CurrentDomain.BaseDirectory;
+                configPath = Path.Combine(exePath, "config.json"); // set to exe folder for published exe
+            }
+            if (!File.Exists(configPath)) throw new ArgumentException("Config file is missing");
+            string configJson = File.ReadAllText(configPath);
+            ApiConfig config = JsonConvert.DeserializeObject<ApiConfig>(configJson) ?? new ApiConfig();
+            if (config.Api_key.Equals("") || config.Base_url.Equals("")) throw new ArgumentException("Config file is empty");
+
             await UploadJson(config, output);
         }
     }
