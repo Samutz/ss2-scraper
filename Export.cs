@@ -20,6 +20,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public bool isMaster;
         public bool isLight;
         public List<string> masters = [];
+        public int totalItems = 0;
         public List<BuildingPlan> buildingPlans = [];
         public List<SimpleObject> dynamicFlags = [];
         public List<SimpleObject> foundations = [];
@@ -521,7 +522,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
     }
 
-    private static void IndexSimpleObject(IArmorGetter record, List<SimpleObject> targetList)
+    private void IndexSimpleObject(IArmorGetter record, List<SimpleObject> targetList)
     {
         SimpleObject obj = new()
         {
@@ -530,9 +531,10 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             name = record.Name?.ToString() ?? ""
         };
         targetList.Add(obj);
+        output.totalItems++;
     }
 
-    private static void IndexSimpleObject(IMiscItemGetter record, List<SimpleObject> targetList)
+    private void IndexSimpleObject(IMiscItemGetter record, List<SimpleObject> targetList)
     {
         SimpleObject obj = new()
         {
@@ -541,9 +543,10 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             name = record.Name?.ToString() ?? ""
         };
         targetList.Add(obj);
+        output.totalItems++;
     }
 
-    private static void IndexSimpleObject(IBookGetter record, List<SimpleObject> targetList)
+    private void IndexSimpleObject(IBookGetter record, List<SimpleObject> targetList)
     {
         SimpleObject obj = new()
         {
@@ -552,6 +555,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             name = record.Name?.ToString() ?? ""
         };
         targetList.Add(obj);
+        output.totalItems++;
     }
 
     private void IndexWorldPopulationCell(IMiscItemGetter record)
@@ -576,6 +580,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         output.worldRepopCells.Add(cell);
+        output.totalItems++;
     }
 
     private void IndexCityPlan(IMiscItemGetter record)
@@ -618,6 +623,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         output.cityPlans.Add(plan);
+        output.totalItems++;
     }
 
     private static string GetCityPlanSettlementEditorID(ScriptStructProperty workshopRef)
@@ -682,6 +688,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         output.unlockableCharacters.Add(character);
+        output.totalItems++;
     }
 
     private void IndexLeaderCard(IWeaponGetter record)
@@ -741,6 +748,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         output.leaderCards.Add(leaderCard);
+        output.totalItems++;
     }
 
     private SimpleObject GetLeaderTraitInfo(IMiscItemGetter record)
@@ -859,6 +867,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             requirements = requirements
         };
         output.dynamicFlags.Add(flag);
+        output.totalItems++;
     }
 
     private void IndexUnlockableBuildingPlan(IMiscItemGetter record)
@@ -935,6 +944,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         output.buildingPlans.Add(buildingPlan);
+        output.totalItems++;
     }
 
     private BuildingLevelPlan? IndexBuildingLevelPlan(IWeaponGetter record)

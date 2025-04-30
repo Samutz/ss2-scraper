@@ -69,6 +69,10 @@ class Program
         var output = export.BuildOutput();
         output.name = pluginFile;
 
+        Console.WriteLine($"Total SS2 Items: {output.totalItems}");
+
+        if (output.totalItems==0) throw new ArgumentException("No SS2 items found in this plugin");
+
         if (doJSON)
         {
             if (!Directory.Exists(".\\json")) Directory.CreateDirectory(".\\json");
