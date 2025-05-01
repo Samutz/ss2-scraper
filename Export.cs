@@ -6,6 +6,7 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Strings;
+using NexusMods.Paths.Trees.Traits;
 using Noggog;
 
 public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
@@ -43,6 +44,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<WorldRepopulationCell> worldRepopCells = [];
         public List<SimpleObject> hqRoomConfigs = [];
         public List<SimpleObject> hqRoomUpgrades = [];
+        public List<SimpleObject> cityPlannerDesks = [];
     }
 
     public class SimpleObject
@@ -135,16 +137,9 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
 
         IndexAddonItems();
         AddSkinsToBuildingPlans();
+        IndexCityPlannerDesks();
 
         return output;
-    }
-
-    private void AddSkinsToBuildingPlans()
-    {
-        foreach(var skin in buildingPlanSkinCache)
-        {
-            output.buildingPlans.Find(plan => plan.formKey == skin.targetPlan)?.skins.Add(skin);
-        }
     }
 
     public bool GetIsMaster() 
@@ -567,6 +562,30 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         output.totalItems++;
     }
 
+    private void IndexCityPlannerDesks()
+    {
+        foreach (var cobj in mod.ConstructibleObjects)
+        {  
+            if (cobj.Categories is null || cobj.CreatedObject is null) continue;
+            if (!cobj.Categories.Any(c => c.FormKey.ToString() == "01457B:SS2.esm")) continue; // SS2_WorkshopMenu_RecipeFilter_Furniture 
+            if (!linkCache.TryResolve<IFurnitureGetter>(cobj.CreatedObject.FormKey, out var furniture)) continue;
+            
+            if (furniture.Keywords is null || !furniture.Keywords.Any(k => k.FormKey.ToString() == "014576:SS2.esm")) continue;
+            var script = GetScript(furniture, "SimSettlementsV2:ObjectReferences:LeaderDesk");
+            if (script is null) continue;
+
+            SimpleObject obj = new()
+            {
+                formKey = furniture.FormKey.ToString(),
+                editorId = furniture.EditorID?.ToString() ?? "",
+                name = furniture.Name?.ToString() ?? "",
+                description = cobj.Description?.ToString() ?? "",
+            };
+            output.cityPlannerDesks.Add(obj);
+            output.totalItems++;
+        }
+    }
+
     private void IndexWorldPopulationCell(IMiscItemGetter record)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:WorldRepopulationCell");
@@ -780,6 +799,14 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         return trait;
+    }
+    
+    private void AddSkinsToBuildingPlans()
+    {
+        foreach(var skin in buildingPlanSkinCache)
+        {
+            output.buildingPlans.Find(plan => plan.formKey == skin.targetPlan)?.skins.Add(skin);
+        }
     }
 
     private void IndexBuildingSkin(IWeaponGetter record)
@@ -1070,6 +1097,17 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     }
 
     private static IScriptEntryGetter? GetScript(IPlacedObjectGetter record, string scriptName)
+    {
+        if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
+        foreach (var script in record.VirtualMachineAdapter.Scripts)
+        {
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            return script;
+        }
+        return null;
+    }
+
+    private static IScriptEntryGetter? GetScript(IFurnitureGetter record, string scriptName)
     {
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
