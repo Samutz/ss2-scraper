@@ -104,7 +104,7 @@ class Program
                 List<string> pluginFiles = [.. Directory.GetFiles(modDir).Where(file => allowedExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))];
                 foreach (var pluginFile in pluginFiles)
                 {
-                    Console.WriteLine($"Found meta.ini for {Path.GetFileName(pluginFile)}");
+                    //Console.WriteLine($"Found meta.ini for {Path.GetFileName(pluginFile)}");
                     Export.ModMetadata metadata = new(){
                         pluginFile = Path.GetFileName(pluginFile),
                         nexusId = nexusId,
@@ -147,7 +147,11 @@ class Program
 
             Console.WriteLine($"Total SS2 Items: {output.totalItems}");
 
-            if (output.totalItems==0) Console.WriteLine("No SS2 items found in this plugin");
+            if (output.totalItems==0) 
+            {
+                Console.WriteLine("No SS2 items found in this plugin. Skipping upload/json export.");
+                continue;
+            }
 
             if (doJSON)
             {
@@ -213,7 +217,13 @@ class Program
 
         // Console.WriteLine("Loading " + pluginFile);
 
-        var activeMod = Fallout4Mod.CreateFromBinaryOverlay(Path.Combine(pluginDir, pluginFile), Fallout4Release.Fallout4);
+        var activeMod = Fallout4Mod.CreateFromBinaryOverlay(Path.Combine(pluginDir, pluginFile), Fallout4Release.Fallout4);   
+
+        if (!activeMod.ModHeader.MasterReferences.Any(m => m.Master.FileName == "SS2.esm") && pluginFile!="SS2.esm")
+        {
+            Console.WriteLine("Plugin does not require SS2.esm, skipping.");
+            return (null, null);
+        }
 
         var listings = new List<LoadOrderListing>();
         foreach (var masterFile in activeMod.ModHeader.MasterReferences)
