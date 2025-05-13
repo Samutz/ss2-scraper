@@ -63,6 +63,14 @@ class Program
         Console.WriteLine($"JSON: {doJSON}");
 
         List<string> modPaths = [];
+        
+        // dedicated log for stuff more important than the general output
+        string logPath = "warnings.log";
+        if (!File.Exists(logPath)) // check for local path when debugging first
+        {
+            string exePath = AppDomain.CurrentDomain.BaseDirectory;
+            logPath = Path.Combine(exePath, logPath); // set to exe folder for published exe
+        }
 
         ApiConfig config = new();
 
@@ -76,7 +84,7 @@ class Program
             if (!File.Exists(configPath)) // check for local path when debugging first
             {
                 string exePath = AppDomain.CurrentDomain.BaseDirectory;
-                configPath = Path.Combine(exePath, "config.json"); // set to exe folder for published exe
+                configPath = Path.Combine(exePath, configPath); // set to exe folder for published exe
             }
             if (!File.Exists(configPath)) throw new ArgumentException("Config file is missing");
             string configJson = File.ReadAllText(configPath);
@@ -167,6 +175,12 @@ class Program
         }
     }
 
+    private static void Log(string message)
+    {
+        string logPath = "log.txt";
+        File.AppendAllText(logPath, $"{DateTime.Now}: {message}" + Environment.NewLine);
+    }
+
     private static async Task UploadJson(ApiConfig? config, Export.Output output)
     {
         if (config?.Base_url is null || config?.Api_key is null) throw new ArgumentException("Json config missing");
@@ -232,6 +246,7 @@ class Program
             if (!File.Exists(masterPath))
             {
                 Console.WriteLine("Could not find required master: "+masterPath);
+                Log($"Missing master '{masterPath}' for plugin '{pluginFile}'");
                 return (null, null);
             }
             listings.Add(new(ModKey.FromFileName(masterFile.Master.FileName), enabled: true));
