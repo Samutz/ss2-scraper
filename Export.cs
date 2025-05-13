@@ -22,11 +22,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public string version = "";
     }
 
-    public class CobjCache
-    {
-        List<IConstructibleObjectGetter> foundations = [];
-    }
-
     public class Output
     {
         public string name = "";
@@ -156,7 +151,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             masters = GetMasters(),
         };
 
-        CacheConstructibleObjects();
         IndexAddonItems();
 
         return output;
@@ -310,43 +304,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             }
 
             Console.WriteLine($"Found UNKNOWN AddonItem: {formKey}");
-        }
-    }
-
-    private void CacheConstructibleObjects()
-    {
-        foreach (var cobj in mod.ConstructibleObjects)
-        {
-            if (cobj.CreatedObject is null) continue;
-            foreach (var keyword in cobj.Categories ?? [])
-            {
-                switch (keyword.FormKey.ToString().ToLower())
-                {
-                    case "018503:SS2.esm": // foundation recipe filter
-                        continue;
-
-                    case "00EE13:SS2.esm": // terraformer recipe filter
-                        continue;
-
-                    case "00F3C9:SS2.esm": // plot spacer recipe filter
-                        continue;
-                    
-                    case "0219AC:SS2.esm": // resource storage recipe filter
-                        continue;
-
-                    case "01457B:SS2.esm": // furniture recipe filter
-                        continue;
-
-                    case "018B01:SS2.esm": // power recipe filter
-                        continue;
-
-                    case "00F3CA:SS2.esm": // stairs recipe filter
-                        continue;
-
-                    default:
-                        continue;
-                }
-            }
         }
     }
 
