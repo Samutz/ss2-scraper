@@ -1,6 +1,7 @@
 namespace SS2Scraper;
 
 using System;
+using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -21,6 +22,11 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public string version = "";
     }
 
+    public class CobjCache
+    {
+        List<IConstructibleObjectGetter> foundations = [];
+    }
+
     public class Output
     {
         public string name = "";
@@ -34,7 +40,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<SimpleObject> dynamicFlags = [];
         public List<SimpleObject> foundations = [];
         public List<SimpleObject> powerPoles = [];
-        public List<SimpleObject> furnitureStoreItems = [];
+        public List<FurnitureStoreItem> furnitureStoreItems = [];
         public List<LeaderCard> leaderCards = [];
         public List<SimpleObject> petStoreCreatures = [];
         public List<UnlockableCharacter> unlockableCharacters = [];
@@ -43,7 +49,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<WorldRepopulationCell> worldRepopCells = [];
         public List<SimpleObject> hqRoomConfigs = [];
         public List<SimpleObject> hqRoomUpgrades = [];
-        public List<SimpleObject> cityPlannerDesks = [];
     }
 
     public class SimpleObject
@@ -131,6 +136,13 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public string author = "";
     }
 
+    public class FurnitureStoreItem : SimpleObject
+    {
+        public string workshopName = ""; // name as appears in workshop menu, might be different from shop inventory name
+        public int vendorLevel = 1;
+        public string type = "other";
+    }
+
     public Output output = new();
 
     public Output BuildOutput()
@@ -144,6 +156,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             masters = GetMasters(),
         };
 
+        CacheConstructibleObjects();
         IndexAddonItems();
 
         return output;
@@ -300,6 +313,43 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
     }
 
+    private void CacheConstructibleObjects()
+    {
+        foreach (var cobj in mod.ConstructibleObjects)
+        {
+            if (cobj.CreatedObject is null) continue;
+            foreach (var keyword in cobj.Categories ?? [])
+            {
+                switch (keyword.FormKey.ToString().ToLower())
+                {
+                    case "018503:SS2.esm": // foundation recipe filter
+                        continue;
+
+                    case "00EE13:SS2.esm": // terraformer recipe filter
+                        continue;
+
+                    case "00F3C9:SS2.esm": // plot spacer recipe filter
+                        continue;
+                    
+                    case "0219AC:SS2.esm": // resource storage recipe filter
+                        continue;
+
+                    case "01457B:SS2.esm": // furniture recipe filter
+                        continue;
+
+                    case "018B01:SS2.esm": // power recipe filter
+                        continue;
+
+                    case "00F3CA:SS2.esm": // stairs recipe filter
+                        continue;
+
+                    default:
+                        continue;
+                }
+            }
+        }
+    }
+
     private void IndexBook(IBookGetter record)
     {
         if (
@@ -405,7 +455,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                     continue;
 
                 case "simsettlementsv2:miscobjects:furniturestoreitem":
-                    IndexSimpleObject(record, output.furnitureStoreItems);
+                    IndexFurnitureStoreItem(record);
                     continue;
 
                 case "simsettlementsv2:miscobjects:petstorecreatureitem":
@@ -588,9 +638,80 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                 name = furniture.Name?.ToString() ?? "",
                 description = cobj.Description?.ToString() ?? "",
             };
-            output.cityPlannerDesks.Add(obj);
+            //output.cityPlannerDesks.Add(obj);
             output.totalItems++;
         }
+    }
+
+    private void IndexFurnitureStoreItem(IMiscItemGetter record)
+    {
+        var cobjs = mod.ConstructibleObjects
+            .Where(co => co.Components?[0].Component.FormKey == record.FormKey && co.Components?[0].Count == 1);
+
+        if (cobjs is null || !cobjs.Any()) return;
+        var cobj = cobjs?.First();
+
+        FurnitureStoreItem storeItem = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "", // shop item name
+            description = cobj?.Description?.ToString() ?? "",
+        };
+
+        var script = GetScript(record, "SimSettlementsV2:MiscObjects:FurnitureStoreItem");
+
+        if (script is not null)
+        {
+            var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
+            if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
+        }
+
+        // actual furniture
+        if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<IFurnitureGetter>(cobj.CreatedObject.FormKey, out var furniture))
+        {
+            storeItem.workshopName = furniture.Name?.ToString() ?? "";
+            storeItem.type = "furniture_other";
+
+            if (furniture.HasKeyword(FormKey.Factory("021B18:Fallout4.esm"))) // sleep anim keyword
+            {
+                storeItem.type = "furniture_bed";
+            }
+
+            if (furniture.HasAnyKeyword([ FormKey.Factory("030BB2:Fallout4.esm"), FormKey.Factory("1338F7:Fallout4.esm") ])) // chair anim keywords
+            {
+                storeItem.type = "furniture_chair";
+            }
+
+            if (furniture.HasAnyKeyword([ FormKey.Factory("014576:SS2.esm"), FormKey.Factory("020320:SS2.esm") ])) // city planner desk keywords
+            {
+                storeItem.type = "furniture_city_planner_desk";
+            }
+        }
+
+        // static
+        if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<IStaticGetter>(cobj.CreatedObject.FormKey, out var stat))
+        {
+            storeItem.workshopName = stat.Name?.ToString() ?? "";
+            storeItem.type = "static";
+        }
+        
+        // activator
+        if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<IActivatorGetter>(cobj.CreatedObject.FormKey, out var activator))
+        {
+            storeItem.workshopName = activator.Name?.ToString() ?? "";
+            storeItem.type = "activator";
+        }
+
+        // light
+        if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<ILightGetter>(cobj.CreatedObject.FormKey, out var light))
+        {
+            storeItem.workshopName = light.Name?.ToString() ?? "";
+            storeItem.type = "light";
+        }
+
+        output.furnitureStoreItems.Add(storeItem);
+        output.totalItems++;
     }
 
     private void IndexWorldPopulationCell(IMiscItemGetter record)
