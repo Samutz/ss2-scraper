@@ -619,30 +619,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         output.totalItems++;
     }
 
-    private void IndexCityPlannerDesks()
-    {
-        foreach (var cobj in mod.ConstructibleObjects)
-        {  
-            if (cobj.Categories is null || cobj.CreatedObject is null) continue;
-            if (!cobj.Categories.Any(c => c.FormKey.ToString() == "01457B:SS2.esm")) continue; // SS2_WorkshopMenu_RecipeFilter_Furniture 
-            if (!linkCache.TryResolve<IFurnitureGetter>(cobj.CreatedObject.FormKey, out var furniture)) continue;
-            
-            if (furniture.Keywords is null || !furniture.Keywords.Any(k => k.FormKey.ToString() == "014576:SS2.esm")) continue;
-            var script = GetScript(furniture, "SimSettlementsV2:ObjectReferences:LeaderDesk");
-            if (script is null) continue;
-
-            SimpleObject obj = new()
-            {
-                formKey = furniture.FormKey.ToString(),
-                editorId = furniture.EditorID?.ToString() ?? "",
-                name = furniture.Name?.ToString() ?? "",
-                description = cobj.Description?.ToString() ?? "",
-            };
-            //output.cityPlannerDesks.Add(obj);
-            output.totalItems++;
-        }
-    }
-
     private void IndexFurnitureStoreItem(IMiscItemGetter record)
     {
         var cobjs = mod.ConstructibleObjects
