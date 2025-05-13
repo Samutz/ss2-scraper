@@ -6,14 +6,12 @@ using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Strings;
-using NexusMods.Paths.Trees.Traits;
 using Noggog;
 
 public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
 {
     private readonly IFallout4ModDisposableGetter mod = mod;
     private readonly ILinkCache linkCache = linkCache;
-    private List<BuildingPlanSkin> buildingPlanSkinCache = []; 
 
     public class ModMetadata
     {
@@ -32,6 +30,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public int totalItems = 0;
         public ModMetadata? metadata;
         public List<BuildingPlan> buildingPlans = [];
+        public List<BuildingPlanSkin> buildingPlanSkins = [];
         public List<SimpleObject> dynamicFlags = [];
         public List<SimpleObject> foundations = [];
         public List<SimpleObject> powerPoles = [];
@@ -66,7 +65,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<BuildingLevelPlan> levelPlans = [];
         public int maxLevel = 3;
         public int maxOccupants = 1;
-        public List<BuildingPlanSkin> skins = [];
     }
 
     public class UnlockableRequirements
@@ -87,6 +85,9 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     public class BuildingPlanSkin : SimpleObject
     {
         public string targetPlan = "";
+        public List<SimpleObject> levelSkins = [];
+        public bool isPlayerSelectOnly = false;
+        public List<string> tags = [];
     }
 
     public class LeaderCard : SimpleObject
@@ -136,8 +137,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         };
 
         IndexAddonItems();
-        AddSkinsToBuildingPlans();
-        IndexCityPlannerDesks();
 
         return output;
     }
@@ -800,14 +799,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
 
         return trait;
     }
-    
-    private void AddSkinsToBuildingPlans()
-    {
-        foreach(var skin in buildingPlanSkinCache)
-        {
-            output.buildingPlans.Find(plan => plan.formKey == skin.targetPlan)?.skins.Add(skin);
-        }
-    }
 
     private void IndexBuildingSkin(IWeaponGetter record)
     {
@@ -815,7 +806,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         if (script is not null)
         {
             var buildingPlan = GetScriptProperty(script, "TargetBuildingPlan") as ScriptObjectProperty;
-            var planKey = (buildingPlan as ScriptObjectProperty)?.Object.FormKey;
+            var planKey = buildingPlan?.Object.FormKey;
 
             if (planKey is null) return;
 
@@ -824,8 +815,11 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                 formKey = record.FormKey.ToString(),
                 editorId = record.EditorID?.ToString() ?? "",
                 targetPlan = planKey?.ToString() ?? "",
-                name = record.Name?.ToString() ?? ""
+                name = record.Name?.ToString() ?? "",
             };
+
+            var isPlayerSelectOnly = GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty;
+            skin.isPlayerSelectOnly = isPlayerSelectOnly?.Data ?? false;
 
             var descFormKey = (GetScriptProperty(script, "BuildingPlanSkinDescription") as ScriptObjectProperty)?.Object.FormKey;
             if (descFormKey is not null && linkCache.TryResolve<IWeaponModificationGetter>(descFormKey.Value, out var omod))
@@ -833,7 +827,30 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                 skin.description = omod.Description?.ToString() ?? "";
             }
 
-            buildingPlanSkinCache.Add(skin);
+            var levelSkins = (GetScriptProperty(script, "LevelSkins") as ScriptObjectListProperty)?.Objects ?? [];
+            foreach (var levelKey in levelSkins)
+            {
+                if (!linkCache.TryResolve<IWeaponGetter>(levelKey.Object.FormKey, out var levelSkin)) continue;
+                SimpleObject newLevelSkin = new()
+                {
+                    formKey = levelSkin.FormKey.ToString(),
+                    editorId = levelSkin.EditorID?.ToString() ?? "",
+                    name = levelSkin.Name?.ToString() ?? "",
+                };
+                if (levelSkin?.Name?.String is not null) skin.levelSkins.Add(newLevelSkin);
+            }
+
+            // keywords
+            if (record.Keywords is not null && record.Keywords.Count > 0)
+            {
+                foreach(var keyword in record.Keywords)
+                {
+                    if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
+                    if (keywordKey.EditorID?.StartsWith("SS2_ThemeTag_") ?? false) skin.tags.Add(keywordKey.EditorID[13..]);
+                }
+            }
+
+            output.buildingPlanSkins.Add(skin);
         }
     }
 
