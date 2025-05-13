@@ -105,6 +105,14 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     public class DynamicFlag : SimpleObject
     {
         public UnlockableRequirements? requirements;
+        public bool hasFlagWaving = false;
+        public bool hasFlagDown = false;
+        public bool hasFlagWall = false;
+        public bool hasFlagHalfCircleFlag01 = false;
+        public bool hasFlagHalfCircleFlag02 = false;
+        public bool hasFlagBannerTownStatic = false;
+        public bool hasFlagBannerTownTorn = false;
+        public bool hasFlagBannerTownTornWaving = false;
     }
 
     public class CityPlan : SimpleObject
@@ -851,6 +859,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             }
 
             output.buildingPlanSkins.Add(skin);
+            output.totalItems++;
         }
     }
 
@@ -919,6 +928,20 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             name = record.Name?.ToString() ?? "",
             requirements = requirements
         };
+
+        var script = GetScript(record, "SimSettlementsV2:Armors:ThemeDefinition_Flags");
+        if (script is not null)
+        {
+            flag.hasFlagWaving = GetScriptProperty(script, "FlagWaving") as ScriptObjectProperty is not null;
+            flag.hasFlagDown = GetScriptProperty(script, "FlagDown") as ScriptObjectProperty is not null;
+            flag.hasFlagWall = GetScriptProperty(script, "FlagWall") as ScriptObjectProperty is not null;
+            flag.hasFlagHalfCircleFlag01 = GetScriptProperty(script, "FlagHalfCircleFlag01") as ScriptObjectProperty is not null;
+            flag.hasFlagHalfCircleFlag02  = GetScriptProperty(script, "FlagHalfCircleFlag02") as ScriptObjectProperty is not null;
+            flag.hasFlagBannerTownStatic  = GetScriptProperty(script, "FlagBannerTownStatic") as ScriptObjectProperty is not null;
+            flag.hasFlagBannerTownTorn  = GetScriptProperty(script, "FlagBannerTownTorn") as ScriptObjectProperty is not null;
+            flag.hasFlagBannerTownTornWaving  = GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty is not null;
+        }
+
         output.dynamicFlags.Add(flag);
         output.totalItems++;
     }
@@ -1125,6 +1148,17 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     }
 
     private static IScriptEntryGetter? GetScript(IFurnitureGetter record, string scriptName)
+    {
+        if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
+        foreach (var script in record.VirtualMachineAdapter.Scripts)
+        {
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            return script;
+        }
+        return null;
+    }
+
+    private static IScriptEntryGetter? GetScript(IArmorGetter record, string scriptName)
     {
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
