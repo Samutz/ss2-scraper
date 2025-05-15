@@ -90,16 +90,21 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<string> tags = [];
     }
 
-    public class LeaderCard : BaseItem
+    public class UniqueNpc : BaseItem
     {
-        public BaseItem? majorTrait;
-        public List<BaseItem> minorTraits = [];
-        public List<BaseItem> weaknesses = [];
+        public ActorSpecial? special;
     }
 
     public class UnlockableCharacter : BaseItem
     {
-        public int[] special = [-1, -1, -1, -1, -1, -1, -1];
+        public UniqueNpc? targetActor;
+    }
+
+    public class LeaderCard : UnlockableCharacter
+    {
+        public BaseItem? majorTrait;
+        public List<BaseItem> minorTraits = [];
+        public List<BaseItem> weaknesses = [];
     }
 
     public class DynamicFlag : BaseItem
@@ -152,6 +157,17 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public int X = 0;
         public int Y = 0;
         public int Z = 0;
+    }
+
+    public class ActorSpecial
+    {
+        public int Strength = 0;
+        public int Perception = 0;
+        public int Endurance = 0;
+        public int Charisma = 0;
+        public int Intelligence = 0;
+        public int Agility = 0;
+        public int Luck = 0;
     }
 
     public Output output = new();
@@ -768,7 +784,8 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         plan.supportedNPCs = supportedNPCs?.Data ?? [0];
         
         var workshopRef = GetScriptProperty(script, "workshopRef") as ScriptStructProperty;
-        if (workshopRef is not null) plan.targetSettlement = GetCityPlanSettlementEditorID(workshopRef);
+        IMajorRecordGetter? workbenchBaseForm = (workshopRef is not null) ? GetFormFromUniversalForm(workshopRef) : null;
+        plan.targetSettlement = workbenchBaseForm?.FormKey.ToString() ?? "";
 
         var plugins = GetScriptProperty(script, "sPluginsUsed") as ScriptStringListProperty;
         plan.plugins = plugins?.Data ?? [];
@@ -789,19 +806,39 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         output.totalItems++;
     }
 
-    private static string GetCityPlanSettlementEditorID(ScriptStructProperty workshopRef)
+    private IMajorRecordGetter? GetFormFromUniversalForm(ScriptStructProperty UniversalFormProperty)
     {
-        if (workshopRef?.Members.First() is null) return "Unknown";
-        
-        var pluginName = GetScriptProperty(workshopRef.Members.First(), "sPluginName") as ScriptStringProperty;
-        var formIdInt = GetScriptProperty(workshopRef.Members.First(), "iFormID") as ScriptIntProperty;
-        if (formIdInt?.Data is null || pluginName?.Data is null) return "Unknown";
-        
-        string formIdHex = string.Format("{0:X6}", formIdInt.Data);
-        string workbenchKeyString = $"{formIdHex}:{pluginName.Data}";
-        if (!FormKey.TryFactory(workbenchKeyString, out var workbenchKey)) return workbenchKeyString;
+        if (UniversalFormProperty?.Members?.First() is null || UniversalFormProperty?.Members.First().Properties is null) return null;
 
-        return workbenchKey.ToString();
+        // direct reference
+        var actorBaseFormProperty = GetScriptProperty(UniversalFormProperty.Members.First(), "BaseForm") as ScriptObjectProperty;
+        if (actorBaseFormProperty is not null && linkCache.TryResolve<IMajorRecordGetter>(actorBaseFormProperty.Object.FormKey, out var record1))
+            return record1;
+
+        // indirect reference
+        var pluginNameProperty = GetScriptProperty(UniversalFormProperty.Members.First(), "sPluginName") as ScriptStringProperty;
+        var formIdProperty = GetScriptProperty(UniversalFormProperty.Members.First(), "iFormID") as ScriptIntProperty;
+
+        if (formIdProperty?.Data is null || pluginNameProperty?.Data is null) return null;
+        
+        string formIdHex = string.Format("{0:X6}", formIdProperty.Data);
+        string formKeyString = $"{formIdHex}:{pluginNameProperty.Data}";
+        if (!FormKey.TryFactory(formKeyString, out var finalFormKey)) return null;
+        if (!linkCache.TryResolve<IMajorRecordGetter>(finalFormKey, out var record2)) return null;
+
+        return record2;
+    }
+
+    private UniqueNpc GetBaseActor(INpcGetter actor)
+    {
+        UniqueNpc baseActor = new()
+        {
+            formKey = actor.FormKey.ToString(),
+            editorId = actor.EditorID?.ToString() ?? "",
+            name = actor.Name?.ToString() ?? "",
+            special = GetActorStats(actor),
+        };
+        return baseActor;
     }
 
     private void IndexUnlockableCharacter(IMiscItemGetter record)
@@ -819,36 +856,8 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = actor.Name?.ToString() ?? "",
+            targetActor = GetBaseActor(actor),
         };
-
-        foreach (var prop in actor.Properties ?? [])
-        {
-            // not gonna bother looking up their forms
-            switch (prop.ActorValue.FormKey.ToString())
-            {
-                case "0002C2:Fallout4.esm": // Strength
-                    character.special[0] = (int) prop.Value;
-                    continue;
-                case "0002C3:Fallout4.esm": // Perception
-                    character.special[1] = (int) prop.Value;
-                    continue;
-                case "0002C4:Fallout4.esm": // Endurace
-                    character.special[2] = (int) prop.Value;
-                    continue;
-                case "0002C5:Fallout4.esm": // Charisma
-                    character.special[3] = (int) prop.Value;
-                    continue;
-                case "0002C6:Fallout4.esm": // Intelligence
-                    character.special[4] = (int) prop.Value;
-                    continue;
-                case "0002C7:Fallout4.esm": // Agility
-                    character.special[5] = (int) prop.Value;
-                    continue;
-                case "0002C8:Fallout4.esm": // Luck
-                    character.special[6] = (int) prop.Value;
-                    continue;
-            }
-        }
 
         output.unlockableCharacters.Add(character);
         output.totalItems++;
@@ -860,55 +869,59 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
-            name = record.Name?.ToString() ?? ""
+            name = record.Name?.ToString() ?? "",
         };
 
         var script = GetScript(record, "SimSettlementsV2:Weapons:LeaderCard");
-        if (script is not null)
+        if (script is null) return;
+        
+        var actorBaseFormProperty = GetScriptProperty(script, "ActorBaseForm") as ScriptStructProperty;
+        IMajorRecordGetter? actorBaseForm = (actorBaseFormProperty is not null) ? GetFormFromUniversalForm(actorBaseFormProperty) : null;
+        if (actorBaseForm is INpcGetter actor) leaderCard.targetActor = GetBaseActor(actor); 
+
+        var majorTraitProp = GetScriptProperty(script, "MajorTrait") as ScriptStructProperty;
+        if (majorTraitProp?.Members.First().Properties.First() as ScriptObjectProperty is not null)
         {
-            var majorTraitProp = GetScriptProperty(script, "MajorTrait") as ScriptStructProperty;
-            if (majorTraitProp?.Members.First().Properties.First() as ScriptObjectProperty is not null)
-            {
-                var property1 = majorTraitProp?.Members.First().Properties.First() as ScriptObjectProperty;
-                if (property1 is not null)
-                { 
-                    if (linkCache.TryResolve<IMiscItemGetter>(property1.Object.FormKey, out var record1))
-                    {
-                        leaderCard.majorTrait = GetLeaderTraitInfo(record1);
-                    }
+            var property1 = majorTraitProp?.Members.First().Properties.First() as ScriptObjectProperty;
+            if (property1 is not null)
+            { 
+                if (linkCache.TryResolve<IMiscItemGetter>(property1.Object.FormKey, out var record1))
+                {
+                    leaderCard.majorTrait = GetLeaderTraitInfo(record1);
                 }
             }
+        }
 
-            var minorTraitProp = GetScriptProperty(script, "MinorTraits") as ScriptStructListProperty;
-            foreach (var struct1 in minorTraitProp?.Structs ?? [])
+        var minorTraitProp = GetScriptProperty(script, "MinorTraits") as ScriptStructListProperty;
+        foreach (var struct1 in minorTraitProp?.Structs ?? [])
+        {
+            foreach (var member1 in struct1.Members)
             {
-                foreach (var member1 in struct1.Members)
+                if (member1 is not null && member1 is ScriptObjectProperty)
                 {
-                    if (member1 is not null && member1 is ScriptObjectProperty)
+                    if (linkCache.TryResolve<IMiscItemGetter>((member1 as ScriptObjectProperty ?? new()).Object.FormKey, out var record1))
                     {
-                        if (linkCache.TryResolve<IMiscItemGetter>((member1 as ScriptObjectProperty ?? new()).Object.FormKey, out var record1))
-                        {
-                            leaderCard.minorTraits.Add(GetLeaderTraitInfo(record1));
-                        }
-                    }
-                }
-            }
-
-            var weaknessProp = GetScriptProperty(script, "Weaknesses") as ScriptStructListProperty;
-            foreach (var struct1 in weaknessProp?.Structs ?? [])
-            {
-                foreach (var member1 in struct1.Members)
-                {
-                    if (member1 is not null && member1 is ScriptObjectProperty)
-                    {
-                        if (linkCache.TryResolve<IMiscItemGetter>((member1 as ScriptObjectProperty ?? new()).Object.FormKey, out var record1))
-                        {
-                            leaderCard.weaknesses.Add(GetLeaderTraitInfo(record1));
-                        }
+                        leaderCard.minorTraits.Add(GetLeaderTraitInfo(record1));
                     }
                 }
             }
         }
+
+        var weaknessProp = GetScriptProperty(script, "Weaknesses") as ScriptStructListProperty;
+        foreach (var struct1 in weaknessProp?.Structs ?? [])
+        {
+            foreach (var member1 in struct1.Members)
+            {
+                if (member1 is not null && member1 is ScriptObjectProperty)
+                {
+                    if (linkCache.TryResolve<IMiscItemGetter>((member1 as ScriptObjectProperty ?? new()).Object.FormKey, out var record1))
+                    {
+                        leaderCard.weaknesses.Add(GetLeaderTraitInfo(record1));
+                    }
+                }
+            }
+        }
+        
 
         output.leaderCards.Add(leaderCard);
         output.totalItems++;
@@ -934,6 +947,75 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         return trait;
+    }
+
+    private ActorSpecial GetActorStats(INpcGetter actor)
+    {
+        List<int> stats = [0,0,0,0,0,0,0];
+
+        List<string> AVFormKeys = [
+            "0002C2:Fallout4.esm",
+            "0002C3:Fallout4.esm",
+            "0002C4:Fallout4.esm",
+            "0002C5:Fallout4.esm",
+            "0002C6:Fallout4.esm",
+            "0002C7:Fallout4.esm",
+            "0002C8:Fallout4.esm"
+        ];
+
+        string actorName = actor.Name?.ToString() ?? actor.FormKey.ToString();
+        List<string> actorNames = ["Ada", "Strong"];
+
+
+        // race record
+        if (linkCache.TryResolve<IRaceGetter>(actor.Race.FormKey, out var race))
+            for (var i=0; i<7; i++) stats[i] += (int?) race.Properties?.Where(p => p.ActorValue.FormKey.ToString() == AVFormKeys[i] && p.Value > 0).FirstOrDefault()?.Value ?? 0;
+
+        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
+            Console.WriteLine($"{actorName} stats after race: {string.Join(" , ", stats)}");
+
+        // class record
+        if (linkCache.TryResolve<IClassGetter>(actor.Class.FormKey, out var classRecord))
+            for (var i=0; i<7; i++) stats[i] += (int?) classRecord.Properties?.Where(p => p.ActorValue.FormKey.ToString() == AVFormKeys[i] && p.Value > 0).FirstOrDefault()?.Value ?? 0;
+
+        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
+            Console.WriteLine($"{actorName} stats after class: {string.Join(" , ", stats)}");
+
+        // actor record
+        for (var i=0; i<7; i++) stats[i] = (int?) actor.Properties?.Where(p => p.ActorValue.FormKey.ToString() == AVFormKeys[i] && p.Value > 0).FirstOrDefault()?.Value ?? stats[i];
+
+        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
+            Console.WriteLine($"{actorName} stats after actor: {string.Join(" , ", stats)}");
+        
+        // actor effects
+        foreach (var spell in actor.ActorEffect ?? [])
+        {
+            if (!linkCache.TryResolve<ISpellGetter>(spell.FormKey, out var spellRecord)) continue;
+            foreach (var effect in spellRecord.Effects)
+            {
+                if (!linkCache.TryResolve<IMagicEffectGetter>(effect.BaseEffect.FormKey, out var effectRecord)) continue;
+                for (var i=0; i<7; i++)
+                {
+                    if (effectRecord.Archetype.ActorValue.FormKey.ToString() == AVFormKeys[i])
+                    {
+                        stats[i] += (int?) effect.Data?.Magnitude ?? 0;
+                    }
+                }
+            }
+        }
+
+        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
+            Console.WriteLine($"{actorName} stats after spell effects: {string.Join(" - ", stats)}");
+
+        return new ActorSpecial(){
+            Strength = stats[0] > 0 ? stats[0] : 1,
+            Perception = stats[1] > 0 ? stats[1] : 1,
+            Endurance = stats[2] > 0 ? stats[2] : 1,
+            Charisma = stats[3] > 0 ? stats[3] : 1,
+            Intelligence = stats[4] > 0 ? stats[4] : 1,
+            Agility = stats[5] > 0 ? stats[5] : 1,
+            Luck = stats[6] > 0 ? stats[6] : 1
+        };
     }
 
     private void IndexBuildingSkin(IWeaponGetter record)
