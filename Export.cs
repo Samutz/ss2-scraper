@@ -32,21 +32,21 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public ModMetadata? metadata;
         public List<BuildingPlan> buildingPlans = [];
         public List<BuildingPlanSkin> buildingPlanSkins = [];
-        public List<SimpleObject> dynamicFlags = [];
-        public List<SimpleObject> foundations = [];
-        public List<SimpleObject> powerPoles = [];
+        public List<BaseItem> dynamicFlags = [];
+        public List<Foundation> foundations = [];
+        public List<BaseItem> powerPoles = [];
         public List<FurnitureStoreItem> furnitureStoreItems = [];
         public List<LeaderCard> leaderCards = [];
-        public List<SimpleObject> petStoreCreatures = [];
+        public List<BaseItem> petStoreCreatures = [];
         public List<UnlockableCharacter> unlockableCharacters = [];
-        public List<SimpleObject> beerRecipes = [];
+        public List<BaseItem> beerRecipes = [];
         public List<CityPlan> cityPlans = [];
         public List<WorldRepopulationCell> worldRepopCells = [];
-        public List<SimpleObject> hqRoomConfigs = [];
-        public List<SimpleObject> hqRoomUpgrades = [];
+        public List<BaseItem> hqRoomConfigs = [];
+        public List<BaseItem> hqRoomUpgrades = [];
     }
 
-    public class SimpleObject
+    public class BaseItem
     {
         public string formKey = "";
         public string editorId = "";
@@ -54,7 +54,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public string description = "";
     }
 
-    public class BuildingPlan : SimpleObject
+    public class BuildingPlan : BaseItem
     {
         public UnlockableRequirements? requirements;
         public bool isPlayerSelectOnly = false;
@@ -74,7 +74,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public bool hasOtherRequirements = false;
     }
 
-    public class BuildingLevelPlan : SimpleObject
+    public class BuildingLevelPlan : BaseItem
     {
         public int level = 1;
         public int maxOccupants = 1;
@@ -82,27 +82,27 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<string> jobUniform = [];
     }
 
-    public class BuildingPlanSkin : SimpleObject
+    public class BuildingPlanSkin : BaseItem
     {
         public string targetPlan = "";
-        public List<SimpleObject> levelSkins = [];
+        public List<BaseItem> levelSkins = [];
         public bool isPlayerSelectOnly = false;
         public List<string> tags = [];
     }
 
-    public class LeaderCard : SimpleObject
+    public class LeaderCard : BaseItem
     {
-        public SimpleObject? majorTrait;
-        public List<SimpleObject> minorTraits = [];
-        public List<SimpleObject> weaknesses = [];
+        public BaseItem? majorTrait;
+        public List<BaseItem> minorTraits = [];
+        public List<BaseItem> weaknesses = [];
     }
 
-    public class UnlockableCharacter : SimpleObject
+    public class UnlockableCharacter : BaseItem
     {
         public int[] special = [-1, -1, -1, -1, -1, -1, -1];
     }
 
-    public class DynamicFlag : SimpleObject
+    public class DynamicFlag : BaseItem
     {
         public UnlockableRequirements? requirements;
         public bool hasFlagWaving = false;
@@ -115,7 +115,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public bool hasFlagBannerTownTornWaving = false;
     }
 
-    public class CityPlan : SimpleObject
+    public class CityPlan : BaseItem
     {
         public int maxLevel = 1;
         public bool isPlayerSelectOnly = false;
@@ -125,17 +125,26 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public string author = "";
     }
 
-    public class WorldRepopulationCell : SimpleObject
+    public class WorldRepopulationCell : BaseItem
     {
         public int maxPopulation = 0;
         public string author = "";
     }
 
-    public class FurnitureStoreItem : SimpleObject
+    public class FurnitureStoreItem : BaseItem
     {
         public string workshopName = ""; // name as appears in workshop menu, might be different from shop inventory name
         public int vendorLevel = 1;
         public string type = "other";
+        public int value = 100;
+    }
+
+    public class Foundation : BaseItem
+    {
+        public string workshopName = ""; // name as appears in workshop menu, might be different from foundation menu name
+        public bool craftable = false;
+        public bool terraformer = false;
+        public int size = 0;
     }
 
     public Output output = new();
@@ -321,7 +330,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             switch(script.Name.ToLower())
             {
                 case "simsettlementsv2:books:beerrecipe":
-                    IndexSimpleObject(record, output.beerRecipes);
+                    IndexBaseItem(record, output.beerRecipes);
                     continue;
 
                 // skip
@@ -404,11 +413,11 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                     continue;
 
                 case "simsettlementsv2:miscobjects:foundation":
-                    IndexSimpleObject(record, output.foundations);
+                    IndexFoundation(record);
                     continue;
 
                 case "simsettlementsv2:miscobjects:powerpole":
-                    IndexSimpleObject(record, output.powerPoles);
+                    IndexBaseItem(record, output.powerPoles);
                     continue;
 
                 case "simsettlementsv2:miscobjects:furniturestoreitem":
@@ -416,7 +425,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                     continue;
 
                 case "simsettlementsv2:miscobjects:petstorecreatureitem":
-                    IndexSimpleObject(record, output.petStoreCreatures);
+                    IndexBaseItem(record, output.petStoreCreatures);
                     continue;
 
                 case "simsettlementsv2:miscobjects:unlockablecharacter":
@@ -436,11 +445,11 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                     continue;
 
                 case "simsettlementsv2:hq:library:miscobjects:requirementtypes:actiontypes:hqroomconfig":
-                    IndexSimpleObject(record, output.hqRoomConfigs);
+                    IndexBaseItem(record, output.hqRoomConfigs);
                     continue;
                 
                 case "simsettlementsv2:hq:baseactiontypes:hqroomupgrade":
-                    IndexSimpleObject(record, output.hqRoomUpgrades);
+                    IndexBaseItem(record, output.hqRoomUpgrades);
                     continue;
 
                 // skip
@@ -540,9 +549,9 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
     }
 
-    private void IndexSimpleObject(IArmorGetter record, List<SimpleObject> targetList)
+    private void IndexBaseItem(IArmorGetter record, List<BaseItem> targetList)
     {
-        SimpleObject obj = new()
+        BaseItem obj = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
@@ -552,9 +561,9 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         output.totalItems++;
     }
 
-    private void IndexSimpleObject(IMiscItemGetter record, List<SimpleObject> targetList)
+    private void IndexBaseItem(IMiscItemGetter record, List<BaseItem> targetList)
     {
-        SimpleObject obj = new()
+        BaseItem obj = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
@@ -564,15 +573,60 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         output.totalItems++;
     }
 
-    private void IndexSimpleObject(IBookGetter record, List<SimpleObject> targetList)
+    private void IndexBaseItem(IBookGetter record, List<BaseItem> targetList)
     {
-        SimpleObject obj = new()
+        BaseItem obj = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? ""
         };
         targetList.Add(obj);
+        output.totalItems++;
+    }
+
+    private void IndexFoundation(IMiscItemGetter record)
+    {
+        var script = GetScript(record, "SimSettlementsV2:MiscObjects:Foundation");
+
+        if (script is null) return;
+
+        Foundation foundation = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "",
+        };
+
+        var spawnData = GetScriptProperty(script, "SpawnData") as ScriptStructProperty;
+        if (spawnData?.Members.First().Properties.First() as ScriptObjectProperty is not null)
+        {
+            foreach (var property in spawnData?.Members.First().Properties ?? [])
+            {
+                if (property.Name!="ObjectForm") continue;
+                var property1 = property as ScriptObjectProperty;
+
+                if (property1?.Object.FormKey is not null && linkCache.TryResolve<IActivatorGetter>(property1.Object.FormKey, out var activator))
+                {
+                    foundation.workshopName = activator.Name?.ToString() ?? "";
+                    foundation.terraformer =  activator.HasKeyword(FormKey.Factory("0193F8:SS2.esm"));
+                    if (activator.ObjectBounds.First.X <= -384 || activator.ObjectBounds.First.Y <= -384) foundation.size = 3;
+                    else if (activator.ObjectBounds.First.X <= -256 || activator.ObjectBounds.First.Y <= -256) foundation.size = 2;
+                    else if (activator.ObjectBounds.First.X <= -128 || activator.ObjectBounds.First.Y <= -128) foundation.size = 1;
+                }
+
+                if (property1?.Object.FormKey is not null && linkCache.TryResolve<IStaticGetter>(property1.Object.FormKey, out var stat))
+                {
+                    foundation.workshopName = stat.Name?.ToString() ?? "";
+                    if (stat.ObjectBounds.First.X <= -384 || stat.ObjectBounds.First.Y <= -384) foundation.size = 3;
+                    else if (stat.ObjectBounds.First.X <= -256 || stat.ObjectBounds.First.Y <= -256) foundation.size = 2;
+                    else if (stat.ObjectBounds.First.X <= -128 || stat.ObjectBounds.First.Y <= -128) foundation.size = 1;
+                }
+            }
+        }
+        //if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
+
+        output.foundations.Add(foundation);
         output.totalItems++;
     }
 
@@ -840,9 +894,9 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         output.totalItems++;
     }
 
-    private SimpleObject GetLeaderTraitInfo(IMiscItemGetter record)
+    private BaseItem GetLeaderTraitInfo(IMiscItemGetter record)
     {
-        SimpleObject trait = new()
+        BaseItem trait = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
@@ -893,7 +947,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             foreach (var levelKey in levelSkins)
             {
                 if (!linkCache.TryResolve<IWeaponGetter>(levelKey.Object.FormKey, out var levelSkin)) continue;
-                SimpleObject newLevelSkin = new()
+                BaseItem newLevelSkin = new()
                 {
                     formKey = levelSkin.FormKey.ToString(),
                     editorId = levelSkin.EditorID?.ToString() ?? "",
@@ -1213,6 +1267,17 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     }
 
     private static IScriptEntryGetter? GetScript(IArmorGetter record, string scriptName)
+    {
+        if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
+        foreach (var script in record.VirtualMachineAdapter.Scripts)
+        {
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            return script;
+        }
+        return null;
+    }
+
+    private static IScriptEntryGetter? GetScript(IActivatorGetter record, string scriptName)
     {
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
