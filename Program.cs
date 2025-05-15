@@ -239,7 +239,18 @@ class Program
             return (null, null);
         }
 
+        // force load DLCs as some addons (even SS2.esm) reference them without having them as master
+        List<string> dlcs = [
+            "DLCRobot.esm",
+            "DLCCoast.esm",
+            "DLCNukaWorld.esm",
+            "DLCworkshop01.esm",
+            "DLCworkshop02.esm",
+            "DLCworkshop03.esm",
+        ];
+
         var listings = new List<LoadOrderListing>();
+        foreach (var dlc in dlcs) listings.Add(new(ModKey.FromFileName(dlc), enabled: true));
         foreach (var masterFile in activeMod.ModHeader.MasterReferences)
         {
             string masterPath = Path.Combine(pluginDir, masterFile.Master.FileName);
