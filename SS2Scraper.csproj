@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mutagen.Bethesda" Version="0.49.0" />
+    <PackageReference Include="Mutagen.Bethesda" Version="0.50.2" />
     <PackageReference Include="Mutagen.Bethesda.Json" Version="0.49.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
