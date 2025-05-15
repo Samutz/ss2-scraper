@@ -147,6 +147,13 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public int size = 0;
     }
 
+    public class BoundsSize
+    {
+        public int X = 0;
+        public int Y = 0;
+        public int Z = 0;
+    }
+
     public Output output = new();
 
     public Output BuildOutput()
@@ -610,17 +617,19 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                 {
                     foundation.workshopName = activator.Name?.ToString() ?? "";
                     foundation.terraformer =  activator.HasKeyword(FormKey.Factory("0193F8:SS2.esm"));
-                    if (activator.ObjectBounds.First.X <= -384 || activator.ObjectBounds.First.Y <= -384) foundation.size = 3;
-                    else if (activator.ObjectBounds.First.X <= -256 || activator.ObjectBounds.First.Y <= -256) foundation.size = 2;
-                    else if (activator.ObjectBounds.First.X <= -128 || activator.ObjectBounds.First.Y <= -128) foundation.size = 1;
+                    BoundsSize size = GetSizeFromObjectBounds(activator.ObjectBounds);
+                    if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
+                    else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
+                    else if (size.X >= 256 || size.Y >= 256) foundation.size = 1;
                 }
 
                 if (property1?.Object.FormKey is not null && linkCache.TryResolve<IStaticGetter>(property1.Object.FormKey, out var stat))
                 {
                     foundation.workshopName = stat.Name?.ToString() ?? "";
-                    if (stat.ObjectBounds.First.X <= -384 || stat.ObjectBounds.First.Y <= -384) foundation.size = 3;
-                    else if (stat.ObjectBounds.First.X <= -256 || stat.ObjectBounds.First.Y <= -256) foundation.size = 2;
-                    else if (stat.ObjectBounds.First.X <= -128 || stat.ObjectBounds.First.Y <= -128) foundation.size = 1;
+                    BoundsSize size = GetSizeFromObjectBounds(stat.ObjectBounds);
+                    if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
+                    else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
+                    else if (size.X >= 256 || size.Y >= 256) foundation.size = 1;
                 }
             }
         }
@@ -628,6 +637,17 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
 
         output.foundations.Add(foundation);
         output.totalItems++;
+    }
+
+    private BoundsSize GetSizeFromObjectBounds(IObjectBoundsGetter bounds)
+    {
+        BoundsSize size = new()
+        {
+            X = (bounds.Second.X > bounds.First.X) ? bounds.Second.X - bounds.First.X : bounds.Second.X - bounds.First.X,
+            Y = (bounds.Second.Y > bounds.First.Y) ? bounds.Second.Y - bounds.First.Y : bounds.Second.Y - bounds.First.Y,
+            Z = (bounds.Second.Z > bounds.First.Z) ? bounds.Second.Z - bounds.First.Z : bounds.Second.Z - bounds.First.Z,
+        };
+        return size;
     }
 
     private void IndexFurnitureStoreItem(IMiscItemGetter record)
