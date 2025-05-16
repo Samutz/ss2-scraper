@@ -963,30 +963,17 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             "0002C8:Fallout4.esm"
         ];
 
-        string actorName = actor.Name?.ToString() ?? actor.FormKey.ToString();
-        List<string> actorNames = ["Ada", "Strong"];
-
-
         // race record
         if (linkCache.TryResolve<IRaceGetter>(actor.Race.FormKey, out var race))
             for (var i=0; i<7; i++) stats[i] += (int?) race.Properties?.Where(p => p.ActorValue.FormKey.ToString() == AVFormKeys[i] && p.Value > 0).FirstOrDefault()?.Value ?? 0;
-
-        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
-            Console.WriteLine($"{actorName} stats after race: {string.Join(" , ", stats)}");
 
         // class record
         if (linkCache.TryResolve<IClassGetter>(actor.Class.FormKey, out var classRecord))
             for (var i=0; i<7; i++) stats[i] += (int?) classRecord.Properties?.Where(p => p.ActorValue.FormKey.ToString() == AVFormKeys[i] && p.Value > 0).FirstOrDefault()?.Value ?? 0;
 
-        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
-            Console.WriteLine($"{actorName} stats after class: {string.Join(" , ", stats)}");
-
         // actor record
-        for (var i=0; i<7; i++) stats[i] = (int?) actor.Properties?.Where(p => p.ActorValue.FormKey.ToString() == AVFormKeys[i] && p.Value > 0).FirstOrDefault()?.Value ?? stats[i];
+        for (var i=0; i<7; i++) stats[i] = (int?) actor.Properties?.Where(p => p.ActorValue.FormKey.ToString() == AVFormKeys[i] && p.Value > 0 && p.Value >= stats[i]).FirstOrDefault()?.Value ?? stats[i];
 
-        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
-            Console.WriteLine($"{actorName} stats after actor: {string.Join(" , ", stats)}");
-        
         // actor effects
         foreach (var spell in actor.ActorEffect ?? [])
         {
@@ -1003,9 +990,6 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                 }
             }
         }
-
-        if (actor.FormKey.ToString().Contains("Fallout4.esm")) 
-            Console.WriteLine($"{actorName} stats after spell effects: {string.Join(" - ", stats)}");
 
         return new ActorSpecial(){
             Strength = stats[0] > 0 ? stats[0] : 1,
