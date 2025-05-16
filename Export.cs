@@ -44,6 +44,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<WorldRepopulationCell> worldRepopCells = [];
         public List<BaseItem> hqRoomConfigs = [];
         public List<BaseItem> hqRoomUpgrades = [];
+        public List<BaseItem> petNames = [];
     }
 
     public class BaseItem
@@ -420,6 +421,9 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     
     private void IndexMiscItem(IMiscItemGetter record)
     {
+        // pet names, doesn't use script
+        if (record.HasKeyword(FormKey.Factory("01F43E:SS2.esm"))) IndexBaseItem(record, output.petNames);
+
         if (
             record.VirtualMachineAdapter is null
             || record.VirtualMachineAdapter.Scripts.Count == 0
