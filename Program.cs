@@ -253,6 +253,7 @@ class Program
         foreach (var dlc in dlcs) listings.Add(new(ModKey.FromFileName(dlc), enabled: true));
         foreach (var masterFile in activeMod.ModHeader.MasterReferences)
         {
+            if (dlcs.Contains(masterFile.Master.FileName)) continue;
             string masterPath = Path.Combine(pluginDir, masterFile.Master.FileName);
             if (!File.Exists(masterPath))
             {
