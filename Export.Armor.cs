@@ -21,18 +21,7 @@ public partial class Export
                     IndexDynamicFlag(record, new());
                     continue;
 
-                // skip
-                case "simsettlementsv2:armors:themedefinition_holiday":
-                case "simsettlementsv2:armors:npcunittype":
-                case "simsettlementsv2:armors:npcloadout":
-                case "simsettlementsv2:armors:soldierrank":
-                case "simsettlementsv2:armors:uniform":
-                case "simsettlementsv2:armors:factiondefinition":
-                    continue;
-
-                default:
-                    Console.WriteLine($"Found AddonItem UNKNOWN Armor: {record.EditorID} ({script.Name})");
-                    continue;
+                default: continue;
             }
         }
     }

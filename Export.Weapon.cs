@@ -3,6 +3,7 @@ using Mutagen.Bethesda.Plugins.Records;
 using Noggog;
 
 namespace SS2Scraper;
+
 public partial class Export
 {
     public void IndexWeapon(IWeaponGetter record)
@@ -30,9 +31,7 @@ public partial class Export
                     IndexLeaderCard(record);
                     continue;
 
-                default:
-                    Console.WriteLine($"Found AddonItem UNKNOWN Weapon: {record.EditorID} ({script.Name})");
-                    continue;
+                default: continue;
             }
         }
     }

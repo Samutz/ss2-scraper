@@ -65,37 +65,10 @@ public partial class Export
                     continue;
 
                 case "simsettlementsv2:hq:baseactiontypes:hqroomupgrade":
-                    IndexBaseItem(record, output.hqRoomUpgrades);
+                    IndexHQRoomUpgrade(record);
                     continue;
 
-                // skip
-                case "simsettlementsv2:miscobjects:settlerlocationdiscovery":
-                case "simsettlementsv2:miscobjects:npcpreferences":
-                case "simsettlementsv2:miscobjects:unlockable":
-                case "simsettlementsv2:miscobjects:unlockablebuildingclass":
-                case "simsettlementsv2:miscobjects:unlockableterritory":
-                case "simsettlementsv2:miscobjects:territorytrait":
-                case "simsettlementsv2:miscobjects:ideologychoice":
-                case "simsettlementsv2:miscobjects:worldspaceconfig":
-                case "simsettlementsv2:miscobjects:factionname":
-                case "simsettlementsv2:objectreferences:petstorecreatureitemref":
-                case "simsettlementsv2:hq:library:miscobjects:hqdepartmentplan":
-                case "simsettlementsv2:hq:gnn:hqresearchfactionuniforms":
-                case "simsettlementsv2:miscobjects:mqbattleally":
-                case "simsettlementsv2:miscobjects:advisorreactions":
-                case "simsettlementsv2:miscobjects:advisordefinition":
-                case "simsettlementsv2:hq:baseactiontypes:departmentmanagedhqresearch":
-                case "simsettlementsv2:hq:baseactiontypes:hqstafftraining":
-                case "simsettlementsv2:hq:baseactiontypes:hqpolicy":
-                case "simsettlementsv2:hq:baseactiontypes:hqscoutlocation":
-                case "vfx:miscobjects:universalunlockable":
-                case "ss2jampads2:miscobjects:universalunlockable":
-                case "workshopframework:library:objectrefs:preventdroppingonground":
-                    continue;
-
-                default:
-                    Console.WriteLine($"Found AddonItem UNKNOWN MiscItem: {record.EditorID} ({script.Name})");
-                    continue;
+                default: continue;
             }
         }
     }
@@ -342,27 +315,52 @@ public partial class Export
             foreach (var keyword in record.Keywords)
             {
                 if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
-                if (keywordKey.EditorID?.StartsWith("SS2C2_Tag_RoomShape_GNN") ?? false) roomConfig.roomShape = keywordKey.EditorID[23..];
+                if (keywordKey.EditorID?.StartsWith("SS2C2_Tag_RoomShape_") ?? false) roomConfig.roomShape = keywordKey.EditorID;
             }
         }
 
         var script = GetScript(record, "simsettlementsv2:hq:library:miscobjects:requirementtypes:actiontypes:hqroomconfig");
-
-        if (script is not null)
+        if (script is null) return;
+        
+        var PrimaryDepartment = GetScriptProperty(script, "PrimaryDepartment") as ScriptObjectProperty;
+        if (PrimaryDepartment?.Object is not null && linkCache.TryResolve<IPlacedObjectGetter>(PrimaryDepartment.Object.FormKey, out var objRef))
         {
-            var PrimaryDepartment = GetScriptProperty(script, "PrimaryDepartment") as ScriptObjectProperty;
-            if (PrimaryDepartment?.Object is not null && linkCache.TryResolve<IPlacedObjectGetter>(PrimaryDepartment.Object.FormKey, out var objRef))
+            if (objRef.Base is not null && linkCache.TryResolve<IActivatorGetter>(objRef.Base.FormKey, out var department))
             {
-                if (objRef.Base is not null && linkCache.TryResolve<IActivatorGetter>(objRef.Base.FormKey, out var department))
-                {
-                    roomConfig.primaryDepartment = department.Name?.ToString() ?? "";
-                }
+                roomConfig.primaryDepartment = department.Name?.ToString() ?? "";
             }
+        }
+
+        var RoomUpgradeSlots = GetScriptProperty(script, "RoomUpgradeSlots") as ScriptObjectListProperty;
+        foreach (var slot in RoomUpgradeSlots?.Objects ?? [])
+        {
+            roomConfig.upgradeSlots.Add(slot.Object.FormKey.ToString());
         }
 
         output.hqRoomConfigs.Add(roomConfig);
         output.totalItems++;
     }
+
+    private void IndexHQRoomUpgrade(IMiscItemGetter record)
+    {
+        HQRoomUpgrade roomUpgrade = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "",
+        };
+
+        var script = GetScript(record, "SimSettlementsV2:HQ:BaseActionTypes:HQRoomUpgrade");
+        if (script is null) return;
+
+        var TargetUpgradeSlot = GetScriptProperty(script, "TargetUpgradeSlot") as ScriptObjectProperty;
+        roomUpgrade.targetUpgradeSlot = TargetUpgradeSlot?.Object.FormKey.ToString() ?? "";
+
+        if (record.HasKeyword(FormKey.Factory("04B2F3:SS2.esm"))) output.hqRoomConstructions.Add(roomUpgrade);
+        else if (record.HasKeyword(FormKey.Factory("04B2F4:SS2.esm"))) output.hqRoomUpgrades.Add(roomUpgrade);
+        output.totalItems++;
+    }
+
     private void IndexUnlockableCharacter(IMiscItemGetter record)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:UnlockableCharacter");

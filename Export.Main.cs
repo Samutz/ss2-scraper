@@ -41,7 +41,8 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public List<CityPlan> cityPlans = [];
         public List<WorldRepopulationCell> worldRepopCells = [];
         public List<HQRoomConfig> hqRoomConfigs = [];
-        public List<BaseItem> hqRoomUpgrades = [];
+        public List<HQRoomUpgrade> hqRoomConstructions = [];
+        public List<HQRoomUpgrade> hqRoomUpgrades = [];
         public List<BaseItem> petNames = [];
     }
 
@@ -161,6 +162,12 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
     {
         public string roomShape = "";
         public string primaryDepartment = "";
+        public List<string> upgradeSlots = [];
+    }
+
+    public class HQRoomUpgrade : BaseItem
+    {
+        public string targetUpgradeSlot = "";
     }
 
     public class BeerRecipe : BaseItem
@@ -196,35 +203,25 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
 
         output = new()
         {
-            isMaster = GetIsMaster(),
-            isLight = GetIsLight(),
+            isMaster = mod.IsMaster,
+            isLight = mod.IsSmallMaster,
             masters = GetMasters(),
         };
 
         IndexAddonItems();
+        IndexHQActionLists();
 
         return output;
     }
 
-    public bool GetIsMaster()
-    {
-        // Console.WriteLine($"Has ESM Flag: {mod.IsMaster}");
-        return mod.IsMaster;
-    }
-    public bool GetIsLight()
-    {
-        // Console.WriteLine($"Has ESL Flag: {mod.IsSmallMaster}");
-        return mod.IsSmallMaster;
-    }
-
-    public List<string> GetMasters()
+    private List<string> GetMasters()
     {
         List<string> masters = [.. mod.MasterReferences.Select(master => master.Master.FileName.String)];
         // masters.ForEach(master => Console.WriteLine($"Uses master: {master}"));
         return masters;
     }
 
-    public List<FormKey?> GetAddonConfigFormKeys()
+    private List<FormKey?> GetAddonConfigFormKeys()
     {
         List<FormKey?> addonConfigKeys = [];
 
@@ -246,7 +243,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return [.. addonConfigKeys.Distinct()];
     }
 
-    public List<FormKey?> GetAddonFormListFormKeys()
+    private List<FormKey?> GetAddonFormListFormKeys()
     {
         var addonConfigKeys = GetAddonConfigFormKeys();
 
@@ -274,7 +271,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return [.. formListKeys.Distinct()];
     }
 
-    public List<FormKey?> GetAddonItemFormKeys()
+    private List<FormKey?> GetAddonItemFormKeys()
     {
         var formListKeys = GetAddonFormListFormKeys();
 
@@ -305,7 +302,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return [.. addonItemKeys.Distinct()];
     }
 
-    public void IndexAddonItems()
+    private void IndexAddonItems()
     {
         var itemKeys = GetAddonItemFormKeys();
 
@@ -345,6 +342,32 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             }
 
             Console.WriteLine($"Found UNKNOWN AddonItem: {formKey}");
+        }
+    }
+
+    // SS2 CH2 doesn't register HQ stuff in its addon config
+    private void IndexHQActionLists()
+    {
+        List<string> listKeys = [
+            "027417:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_DefaultActions
+            "01F16F:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Basement_DefaultActions
+            "0327DD:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Exterior_DefaultActions
+            "02649A:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_MidFloor_DefaultActions
+            "027416:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_TutorialDefaultActions
+            "034DCB:SS2_XPAC_Chapter2.esm", // SS2C2_HQActions_GNN_MQ24RegisterPostTutorial
+        ];
+
+        foreach (var listKey in listKeys)
+        {
+            if (!linkCache.TryResolve<IFormListGetter>(FormKey.Factory(listKey), out var formlist)) continue;
+            foreach (var item in formlist.Items)
+            {
+                if (linkCache.TryResolve<IMiscItemGetter>(item.FormKey, out var miscItem))
+                {
+                    IndexMiscItem(miscItem);
+                    continue;
+                }
+            }
         }
     }
 

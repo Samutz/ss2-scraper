@@ -5,7 +5,7 @@ namespace SS2Scraper;
 
 public partial class Export
 {
-private UniqueNpc GetBaseActor(INpcGetter actor)
+    private UniqueNpc GetBaseActor(INpcGetter actor)
     {
         UniqueNpc baseActor = new()
         {

@@ -22,19 +22,7 @@ public partial class Export
                     IndexBeerRecipe(record);
                     continue;
 
-                // skip
-                case "simsettlementsv2:books:beerrecipeobjectref":
-                case "simsettlementsv2:books:newsarticle":
-                case "simsettlementsv2:books:magazineissue":
-                case "simsettlementsv2:objectreferences:newspaper":
-                case "simsettlementsv2:objectreferences:magazine":
-                case "simsettlementsv2:books:inboxitem":
-                case "magstagescript":
-                    continue;
-
-                default:
-                    Console.WriteLine($"Found AddonItem UNKNOWN Book: {record.EditorID} ({script.Name})");
-                    continue;
+                default: continue;
             }
         }
     }
