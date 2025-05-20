@@ -42,7 +42,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<BaseItem> beerRecipes = [];
         public List<CityPlan> cityPlans = [];
         public List<WorldRepopulationCell> worldRepopCells = [];
-        public List<BaseItem> hqRoomConfigs = [];
+        public List<HQRoomConfig> hqRoomConfigs = [];
         public List<BaseItem> hqRoomUpgrades = [];
         public List<BaseItem> petNames = [];
     }
@@ -142,7 +142,13 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public string workshopName = ""; // name as appears in workshop menu, might be different from shop inventory name
         public int vendorLevel = 1;
         public string type = "other";
-        public int value = 100;
+        public int value = 0;
+    }
+    
+    public class PetStoreCreature : BaseItem
+    {
+        public int vendorLevel = 1;
+        public int value = 0;
     }
 
     public class Foundation : BaseItem
@@ -151,6 +157,12 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public bool craftable = false;
         public bool terraformer = false;
         public int size = 0;
+    }
+
+    public class HQRoomConfig : BaseItem
+    {
+        public string roomShape = "";
+        public string primaryDepartment = "";
     }
 
     public class BoundsSize
@@ -452,7 +464,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                     continue;
 
                 case "simsettlementsv2:miscobjects:petstorecreatureitem":
-                    IndexBaseItem(record, output.petStoreCreatures);
+                    IndexPetStoreCreature(record);
                     continue;
 
                 case "simsettlementsv2:miscobjects:unlockablecharacter":
@@ -472,7 +484,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                     continue;
 
                 case "simsettlementsv2:hq:library:miscobjects:requirementtypes:actiontypes:hqroomconfig":
-                    IndexBaseItem(record, output.hqRoomConfigs);
+                    IndexHQRoomConfig(record);
                     continue;
                 
                 case "simsettlementsv2:hq:baseactiontypes:hqroomupgrade":
@@ -653,13 +665,15 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                 }
             }
         }
-        //if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
+
+        var cobjs = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == record.FormKey);
+        if (cobjs.Any() && cobjs?.First() is not null) foundation.craftable = true;
 
         output.foundations.Add(foundation);
         output.totalItems++;
     }
 
-    private BoundsSize GetSizeFromObjectBounds(IObjectBoundsGetter bounds)
+    private static BoundsSize GetSizeFromObjectBounds(IObjectBoundsGetter bounds)
     {
         BoundsSize size = new()
         {
@@ -668,6 +682,42 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             Z = (bounds.Second.Z > bounds.First.Z) ? bounds.Second.Z - bounds.First.Z : bounds.Second.Z - bounds.First.Z,
         };
         return size;
+    }
+
+    private void IndexHQRoomConfig(IMiscItemGetter record)
+    {
+        HQRoomConfig roomConfig = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "",
+        };
+
+        if (record.Keywords is not null && record.Keywords.Count > 0)
+        {
+            foreach (var keyword in record.Keywords)
+            {
+                if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
+                if (keywordKey.EditorID?.StartsWith("SS2C2_Tag_RoomShape_GNN") ?? false) roomConfig.roomShape = keywordKey.EditorID[23..];
+            }
+        }
+
+        var script = GetScript(record, "simsettlementsv2:hq:library:miscobjects:requirementtypes:actiontypes:hqroomconfig");
+
+        if (script is not null)
+        {
+            var PrimaryDepartment = GetScriptProperty(script, "PrimaryDepartment") as ScriptObjectProperty;
+            if (PrimaryDepartment?.Object is not null && linkCache.TryResolve<IPlacedObjectGetter>(PrimaryDepartment.Object.FormKey, out var objRef))
+            {
+                if (objRef.Base is not null && linkCache.TryResolve<IActivatorGetter>(objRef.Base.FormKey, out var department))
+                {
+                    roomConfig.primaryDepartment = department.Name?.ToString() ?? "";
+                }
+            }
+        }
+
+        output.hqRoomConfigs.Add(roomConfig);
+        output.totalItems++;
     }
 
     private void IndexFurnitureStoreItem(IMiscItemGetter record)
@@ -684,6 +734,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "", // shop item name
             description = cobj?.Description?.ToString() ?? "",
+            value = record.Value
         };
 
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:FurnitureStoreItem");
@@ -705,12 +756,12 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
                 storeItem.type = "furniture_bed";
             }
 
-            if (furniture.HasAnyKeyword([ FormKey.Factory("030BB2:Fallout4.esm"), FormKey.Factory("1338F7:Fallout4.esm") ])) // chair anim keywords
+            if (furniture.HasAnyKeyword([FormKey.Factory("030BB2:Fallout4.esm"), FormKey.Factory("1338F7:Fallout4.esm")])) // chair anim keywords
             {
                 storeItem.type = "furniture_chair";
             }
 
-            if (furniture.HasAnyKeyword([ FormKey.Factory("014576:SS2.esm"), FormKey.Factory("020320:SS2.esm") ])) // city planner desk keywords
+            if (furniture.HasAnyKeyword([FormKey.Factory("014576:SS2.esm"), FormKey.Factory("020320:SS2.esm")])) // city planner desk keywords
             {
                 storeItem.type = "furniture_city_planner_desk";
             }
@@ -722,7 +773,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             storeItem.workshopName = stat.Name?.ToString() ?? "";
             storeItem.type = "static";
         }
-        
+
         // activator
         if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<IActivatorGetter>(cobj.CreatedObject.FormKey, out var activator))
         {
@@ -738,6 +789,28 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         }
 
         output.furnitureStoreItems.Add(storeItem);
+        output.totalItems++;
+    }
+
+    private void IndexPetStoreCreature(IMiscItemGetter record)
+    {
+        PetStoreCreature storeItem = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "", // shop item name
+            value = record.Value
+        };
+
+        var script = GetScript(record, "SimSettlementsV2:MiscObjects:PetStoreCreatureItem");
+
+        if (script is not null)
+        {
+            var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
+            if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
+        }
+
+        output.petStoreCreatures.Add(storeItem);
         output.totalItems++;
     }
 
