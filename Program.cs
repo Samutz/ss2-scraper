@@ -1,7 +1,4 @@
-﻿namespace SS2Scraper;
-
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Fallout4;
@@ -13,6 +10,8 @@ using Mutagen.Bethesda.Plugins.Order;
 using Newtonsoft.Json;
 using IniParser;
 using IniParser.Model;
+
+namespace SS2Scraper;
 
 class Program
 {
@@ -34,7 +33,7 @@ class Program
 
         for (int i = 0; i < args.Length; i++)
         {
-            string nextArg = i+1 < args.Length ? args[i+1] : "";
+            string nextArg = i + 1 < args.Length ? args[i + 1] : "";
 
             switch (args[i].ToLower())
             {
@@ -58,12 +57,12 @@ class Program
                     continue;
             }
         }
-        
+
         Console.WriteLine($"Upload: {doUpload}");
         Console.WriteLine($"JSON: {doJSON}");
 
         List<string> modPaths = [];
-        
+
         // dedicated log for stuff more important than the general output
         string logPath = "warnings.log";
         if (!File.Exists(logPath)) // check for local path when debugging first
@@ -91,7 +90,7 @@ class Program
             config = JsonConvert.DeserializeObject<ApiConfig>(configJson) ?? new ApiConfig();
             if (config.Api_key.Equals("") || config.Base_url.Equals("")) throw new ArgumentException("Config has empty values");
         }
-        
+
         string[] allowedExtensions = [".esm", ".esp", ".esl"];
 
         if (doMO2)
@@ -101,19 +100,20 @@ class Program
             foreach (string mod in enabledMods)
             {
                 string modName = mod.StartsWith('+') ? mod[1..] : mod;
-                string modDir = Path.GetFullPath(Path.GetDirectoryName(modListPath)+"\\..\\..\\mods\\"+modName);
-                string iniPath = Path.GetFullPath(modDir+"\\meta.ini");
+                string modDir = Path.GetFullPath(Path.GetDirectoryName(modListPath) + "\\..\\..\\mods\\" + modName);
+                string iniPath = Path.GetFullPath(modDir + "\\meta.ini");
                 //Console.WriteLine($"Checking for {iniPath}");
                 if (!File.Exists(iniPath)) continue;
                 var iniParser = new FileIniDataParser();
                 IniData data = iniParser.ReadFile(iniPath);
                 int nexusId = int.Parse(data["General"]["modid"]);
-                if (nexusId<=0) continue;
+                if (nexusId <= 0) continue;
                 List<string> pluginFiles = [.. Directory.GetFiles(modDir).Where(file => allowedExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))];
                 foreach (var pluginFile in pluginFiles)
                 {
                     //Console.WriteLine($"Found meta.ini for {Path.GetFileName(pluginFile)}");
-                    Export.ModMetadata metadata = new(){
+                    Export.ModMetadata metadata = new()
+                    {
                         pluginFile = Path.GetFileName(pluginFile),
                         nexusId = nexusId,
                         name = modName,
@@ -155,7 +155,7 @@ class Program
 
             Console.WriteLine($"Total SS2 Items: {output.totalItems}");
 
-            if (output.totalItems==0) 
+            if (output.totalItems == 0)
             {
                 Console.WriteLine("No SS2 items found in this plugin. Skipping upload/json export.");
                 continue;
@@ -231,9 +231,9 @@ class Program
 
         // Console.WriteLine("Loading " + pluginFile);
 
-        var activeMod = Fallout4Mod.CreateFromBinaryOverlay(Path.Combine(pluginDir, pluginFile), Fallout4Release.Fallout4);   
+        var activeMod = Fallout4Mod.CreateFromBinaryOverlay(Path.Combine(pluginDir, pluginFile), Fallout4Release.Fallout4);
 
-        if (!activeMod.ModHeader.MasterReferences.Any(m => m.Master.FileName == "SS2.esm") && pluginFile!="SS2.esm")
+        if (!activeMod.ModHeader.MasterReferences.Any(m => m.Master.FileName == "SS2.esm") && pluginFile != "SS2.esm")
         {
             Console.WriteLine("Plugin does not require SS2.esm, skipping.");
             return (null, null);
@@ -257,7 +257,7 @@ class Program
             string masterPath = Path.Combine(pluginDir, masterFile.Master.FileName);
             if (!File.Exists(masterPath))
             {
-                Console.WriteLine("Could not find required master: "+masterPath);
+                Console.WriteLine("Could not find required master: " + masterPath);
                 Log($"Missing master '{masterPath}' for plugin '{pluginFile}'");
                 return (null, null);
             }

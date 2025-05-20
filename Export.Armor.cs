@@ -1,14 +1,6 @@
-namespace SS2Scraper;
-
-using System;
-using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
-using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Aspects;
-using Mutagen.Bethesda.Plugins.Cache;
-using Mutagen.Bethesda.Plugins.Records;
-using Mutagen.Bethesda.Strings;
-using Noggog;
+
+namespace SS2Scraper;
 
 public partial class Export
 {
@@ -61,10 +53,10 @@ public partial class Export
             flag.hasFlagDown = GetScriptProperty(script, "FlagDown") as ScriptObjectProperty is not null;
             flag.hasFlagWall = GetScriptProperty(script, "FlagWall") as ScriptObjectProperty is not null;
             flag.hasFlagHalfCircleFlag01 = GetScriptProperty(script, "FlagHalfCircleFlag01") as ScriptObjectProperty is not null;
-            flag.hasFlagHalfCircleFlag02  = GetScriptProperty(script, "FlagHalfCircleFlag02") as ScriptObjectProperty is not null;
-            flag.hasFlagBannerTownStatic  = GetScriptProperty(script, "FlagBannerTownStatic") as ScriptObjectProperty is not null;
-            flag.hasFlagBannerTownTorn  = GetScriptProperty(script, "FlagBannerTownTorn") as ScriptObjectProperty is not null;
-            flag.hasFlagBannerTownTornWaving  = GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty is not null;
+            flag.hasFlagHalfCircleFlag02 = GetScriptProperty(script, "FlagHalfCircleFlag02") as ScriptObjectProperty is not null;
+            flag.hasFlagBannerTownStatic = GetScriptProperty(script, "FlagBannerTownStatic") as ScriptObjectProperty is not null;
+            flag.hasFlagBannerTownTorn = GetScriptProperty(script, "FlagBannerTownTorn") as ScriptObjectProperty is not null;
+            flag.hasFlagBannerTownTornWaving = GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty is not null;
         }
 
         output.dynamicFlags.Add(flag);

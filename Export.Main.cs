@@ -1,14 +1,11 @@
-namespace SS2Scraper;
-
-using System;
-using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Aspects;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Strings;
 using Noggog;
+
+namespace SS2Scraper;
 
 public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
 {
@@ -145,7 +142,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public string type = "other";
         public int value = 0;
     }
-    
+
     public class PetStoreCreature : BaseItem
     {
         public int vendorLevel = 1;
@@ -196,7 +193,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
     public Output BuildOutput()
     {
         TranslatedString.DefaultLanguage = Language.English;
-        
+
         output = new()
         {
             isMaster = GetIsMaster(),
@@ -209,17 +206,17 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return output;
     }
 
-    public bool GetIsMaster() 
-    { 
+    public bool GetIsMaster()
+    {
         // Console.WriteLine($"Has ESM Flag: {mod.IsMaster}");
-        return mod.IsMaster; 
+        return mod.IsMaster;
     }
-    public bool GetIsLight() 
-    { 
+    public bool GetIsLight()
+    {
         // Console.WriteLine($"Has ESL Flag: {mod.IsSmallMaster}");
-        return mod.IsSmallMaster; 
+        return mod.IsSmallMaster;
     }
-    
+
     public List<string> GetMasters()
     {
         List<string> masters = [.. mod.MasterReferences.Select(master => master.Master.FileName.String)];
@@ -239,7 +236,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             ) continue;
 
             var script = GetScript(quest, "SimSettlementsV2:quests:AddonPack");
-            if (script is not null) 
+            if (script is not null)
             {
                 var property = GetScriptProperty(script, "MyAddonConfig");
                 addonConfigKeys.Add((property as ScriptObjectProperty)?.Object.FormKey);
@@ -265,9 +262,10 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             // Console.WriteLine($"Found AddonConfig: {miscItem.EditorID}");
 
             var script = GetScript(miscItem, "SimSettlementsV2:MiscObjects:AddonPackConfiguration");
-            if (script is not null) 
+            if (script is not null)
             {
-                (GetScriptProperty(script, "MyItems") as ScriptObjectListProperty)?.Objects.ForEach(obj => {
+                (GetScriptProperty(script, "MyItems") as ScriptObjectListProperty)?.Objects.ForEach(obj =>
+                {
                     formListKeys.Add(obj.Object.FormKey);
                 });
             }
@@ -288,12 +286,12 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                 formKey is null
                 || !linkCache.TryResolve<IFormListGetter>(formKey.Value, out var formList)
             ) continue;
-            
+
             // Console.WriteLine($"Found AddonItem FormList: {formList.EditorID} with {formList.Items.Count} items");
 
             if (
-                formList is null 
-                || formList.Items is null 
+                formList is null
+                || formList.Items is null
                 || formList.Items.Count == 0
             ) continue;
 
@@ -387,7 +385,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         var formIdProperty = GetScriptProperty(UniversalFormProperty.Members.First(), "iFormID") as ScriptIntProperty;
 
         if (formIdProperty?.Data is null || pluginNameProperty?.Data is null) return null;
-        
+
         string formIdHex = string.Format("{0:X6}", formIdProperty.Data);
         string formKeyString = $"{formIdHex}:{pluginNameProperty.Data}";
         if (!FormKey.TryFactory(formKeyString, out var finalFormKey)) return null;
@@ -435,13 +433,13 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
 
         return requirements;
     }
-    
+
     private static ScriptProperty? GetScriptProperty(IScriptEntryGetter script, string propertyName)
     {
         foreach (var property in script.Properties)
         {
             if (property is null) continue;
-            if (property.Name==propertyName) return property as ScriptProperty;
+            if (property.Name == propertyName) return property as ScriptProperty;
         }
         return null;
     }

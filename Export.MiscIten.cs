@@ -1,14 +1,10 @@
-namespace SS2Scraper;
-
-using System;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
-using Mutagen.Bethesda.Plugins.Aspects;
-using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
-using Mutagen.Bethesda.Strings;
 using Noggog;
+
+namespace SS2Scraper;
 
 public partial class Export
 {
