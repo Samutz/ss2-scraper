@@ -4,6 +4,7 @@ using System;
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
+using Mutagen.Bethesda.Plugins.Aspects;
 using Mutagen.Bethesda.Plugins.Cache;
 using Mutagen.Bethesda.Plugins.Records;
 using Mutagen.Bethesda.Strings;
@@ -39,7 +40,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
         public List<LeaderCard> leaderCards = [];
         public List<BaseItem> petStoreCreatures = [];
         public List<UnlockableCharacter> unlockableCharacters = [];
-        public List<BaseItem> beerRecipes = [];
+        public List<BeerRecipe> beerRecipes = [];
         public List<CityPlan> cityPlans = [];
         public List<WorldRepopulationCell> worldRepopCells = [];
         public List<HQRoomConfig> hqRoomConfigs = [];
@@ -163,6 +164,13 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     {
         public string roomShape = "";
         public string primaryDepartment = "";
+    }
+
+    public class BeerRecipe : BaseItem
+    {
+        public string recipeName = "";
+        public string mash = "";
+        public List<string> flavorings = [];
     }
 
     public class BoundsSize
@@ -366,7 +374,7 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             switch(script.Name.ToLower())
             {
                 case "simsettlementsv2:books:beerrecipe":
-                    IndexBaseItem(record, output.beerRecipes);
+                    IndexBeerRecipe(record);
                     continue;
 
                 // skip
@@ -682,6 +690,42 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
             Z = (bounds.Second.Z > bounds.First.Z) ? bounds.Second.Z - bounds.First.Z : bounds.Second.Z - bounds.First.Z,
         };
         return size;
+    }
+
+    private void IndexBeerRecipe(IBookGetter record)
+    {
+        BeerRecipe beerRecipe = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            recipeName = record.Name?.ToString() ?? "",
+        };
+
+        var script = GetScript(record, "SimSettlementsV2:Books:BeerRecipe");
+
+        if (script is null) return;
+
+        var Mash = GetScriptProperty(script, "Mash") as ScriptObjectProperty;
+        if (Mash?.Object is not null && linkCache.TryResolve<INamedGetter>(Mash.Object.FormKey, out var mashPotion))
+        {
+            beerRecipe.mash = mashPotion.Name?.ToString() ?? "";
+        }
+
+        var CreatedBeer = GetScriptProperty(script, "CreatedBeer") as ScriptObjectProperty;
+        if (CreatedBeer?.Object is not null && linkCache.TryResolve<IIngestibleGetter>(CreatedBeer.Object.FormKey, out var beerPotion))
+        {
+            beerRecipe.name = beerPotion.Name?.ToString() ?? "";
+        }
+
+        var Flavorings = GetScriptProperty(script, "Flavorings") as ScriptObjectListProperty;
+        foreach (var falvoring in Flavorings?.Objects ?? [])
+        {
+            if (!linkCache.TryResolve<INamedGetter>(falvoring.Object.FormKey, out var flavoringForm)) continue;
+            beerRecipe.flavorings.Add(flavoringForm.Name?.ToString() ?? $"(Name Missing: {falvoring.Object.FormKey})");
+        }
+
+        output.beerRecipes.Add(beerRecipe);
+        output.totalItems++;
     }
 
     private void IndexHQRoomConfig(IMiscItemGetter record)
@@ -1441,6 +1485,17 @@ public class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
     }
 
     private static IScriptEntryGetter? GetScript(IActivatorGetter record, string scriptName)
+    {
+        if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
+        foreach (var script in record.VirtualMachineAdapter.Scripts)
+        {
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            return script;
+        }
+        return null;
+    }
+
+    private static IScriptEntryGetter? GetScript(IBookGetter record, string scriptName)
     {
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
