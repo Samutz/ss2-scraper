@@ -33,7 +33,7 @@ public partial class Export
                     continue;
 
                 case "simsettlementsv2:miscobjects:powerpole":
-                    IndexBaseItem(record, output.powerPoles);
+                    IndexPowerPole(record);
                     continue;
 
                 case "simsettlementsv2:miscobjects:furniturestoreitem":
@@ -132,9 +132,46 @@ public partial class Export
         }
 
         var cobjs = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == record.FormKey);
-        if (cobjs.Any() && cobjs?.First() is not null) foundation.craftable = true;
+        foundation.craftable = cobjs.Any() && cobjs?.First() is not null;
 
         output.foundations.Add(foundation);
+        output.totalItems++;
+    }
+
+    private void IndexPowerPole(IMiscItemGetter record)
+    {
+        var script = GetScript(record, "SimSettlementsV2:MiscObjects:PowerPole");
+
+        if (script is null) return;
+
+        PowerPole pole = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "",
+        };
+
+        var spawnData = GetScriptProperty(script, "SpawnData") as ScriptStructProperty;
+        if (spawnData?.Members.First().Properties.First() as ScriptObjectProperty is not null)
+        {
+            foreach (var property in spawnData?.Members.First().Properties ?? [])
+            {
+                if (property.Name != "ObjectForm") continue;
+                var property1 = property as ScriptObjectProperty;
+
+                if (property1?.Object.FormKey is not null && linkCache.TryResolve<IActivatorGetter>(property1.Object.FormKey, out var activator))
+                {
+                    pole.workshopName = activator.Name?.ToString() ?? "";
+                    pole.height = GetSizeFromObjectBounds(activator.ObjectBounds).Z;
+                    pole.hasLight = GetScript(activator, "SimSettlementsV2:ObjectReferences:AllowAnimationsDummyScript") is not null && activator.HasKeyword(FormKey.Factory("03037E:Fallout4.esm"));
+                }
+            }
+        }
+
+        var cobjs = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == record.FormKey);
+        pole.craftable = cobjs.Any() && cobjs?.First() is not null;
+
+        output.powerPoles.Add(pole);
         output.totalItems++;
     }
 

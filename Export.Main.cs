@@ -32,7 +32,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public List<BuildingPlanSkin> buildingPlanSkins = [];
         public List<BaseItem> dynamicFlags = [];
         public List<Foundation> foundations = [];
-        public List<BaseItem> powerPoles = [];
+        public List<PowerPole> powerPoles = [];
         public List<FurnitureStoreItem> furnitureStoreItems = [];
         public List<LeaderCard> leaderCards = [];
         public List<BaseItem> petStoreCreatures = [];
@@ -158,6 +158,14 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public int size = 0;
     }
 
+    public class PowerPole : BaseItem
+    {
+        public string workshopName = "";
+        public bool craftable = false;
+        public int height = 0;
+        public bool hasLight = false;
+    }
+
     public class HQRoomConfig : BaseItem
     {
         public string roomShape = "";
@@ -205,7 +213,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         {
             isMaster = mod.IsMaster,
             isLight = mod.IsSmallMaster,
-            masters = [..mod.MasterReferences.Select(master => master.Master.FileName.String)],
+            masters = [.. mod.MasterReferences.Select(master => master.Master.FileName.String)],
         };
 
         IndexAddonItems();
@@ -506,6 +514,17 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
     }
 
     private static IScriptEntryGetter? GetScript(IBookGetter record, string scriptName)
+    {
+        if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
+        foreach (var script in record.VirtualMachineAdapter.Scripts)
+        {
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            return script;
+        }
+        return null;
+    }
+    
+    private static IScriptEntryGetter? GetScript(IActivatorGetter record, string scriptName)
     {
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
