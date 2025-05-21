@@ -205,20 +205,13 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         {
             isMaster = mod.IsMaster,
             isLight = mod.IsSmallMaster,
-            masters = GetMasters(),
+            masters = [..mod.MasterReferences.Select(master => master.Master.FileName.String)],
         };
 
         IndexAddonItems();
         IndexHQActionLists();
 
         return output;
-    }
-
-    private List<string> GetMasters()
-    {
-        List<string> masters = [.. mod.MasterReferences.Select(master => master.Master.FileName.String)];
-        // masters.ForEach(master => Console.WriteLine($"Uses master: {master}"));
-        return masters;
     }
 
     private List<FormKey?> GetAddonConfigFormKeys()
