@@ -103,7 +103,7 @@ public partial class Export
         };
 
         var spawnData = GetScriptProperty(script, "SpawnData") as ScriptStructProperty;
-        if (spawnData?.Members.First().Properties.First() as ScriptObjectProperty is not null)
+        if (spawnData?.Members.First().Properties.First() is not null)
         {
             foreach (var property in spawnData?.Members.First().Properties ?? [])
             {
@@ -113,7 +113,8 @@ public partial class Export
                 if (property1?.Object.FormKey is not null && linkCache.TryResolve<IActivatorGetter>(property1.Object.FormKey, out var activator))
                 {
                     foundation.workshopName = activator.Name?.ToString() ?? "";
-                    foundation.terraformer = activator.HasKeyword(FormKey.Factory("0193F8:SS2.esm"));
+                    foundation.terraformer = activator.HasKeyword(FormKey.Factory("0193F8:SS2.esm")); // terraformer keyword
+                    foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
                     BoundsSize size = GetSizeFromObjectBounds(activator.ObjectBounds);
                     if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
                     else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
@@ -123,6 +124,7 @@ public partial class Export
                 if (property1?.Object.FormKey is not null && linkCache.TryResolve<IStaticGetter>(property1.Object.FormKey, out var stat))
                 {
                     foundation.workshopName = stat.Name?.ToString() ?? "";
+                    foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == stat.FormKey).Any();
                     BoundsSize size = GetSizeFromObjectBounds(stat.ObjectBounds);
                     if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
                     else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
@@ -130,9 +132,6 @@ public partial class Export
                 }
             }
         }
-
-        var cobjs = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == record.FormKey);
-        foundation.craftable = cobjs.Any() && cobjs?.First() is not null;
 
         output.foundations.Add(foundation);
         output.totalItems++;
@@ -152,7 +151,7 @@ public partial class Export
         };
 
         var spawnData = GetScriptProperty(script, "SpawnData") as ScriptStructProperty;
-        if (spawnData?.Members.First().Properties.First() as ScriptObjectProperty is not null)
+        if (spawnData?.Members.First().Properties.First() is not null)
         {
             foreach (var property in spawnData?.Members.First().Properties ?? [])
             {
@@ -163,13 +162,13 @@ public partial class Export
                 {
                     pole.workshopName = activator.Name?.ToString() ?? "";
                     pole.height = GetSizeFromObjectBounds(activator.ObjectBounds).Z;
-                    pole.hasLight = GetScript(activator, "SimSettlementsV2:ObjectReferences:AllowAnimationsDummyScript") is not null && activator.HasKeyword(FormKey.Factory("03037E:Fallout4.esm"));
+                    pole.hasLight =
+                        GetScript(activator, "SimSettlementsV2:ObjectReferences:AllowAnimationsDummyScript") is not null
+                        && activator.HasKeyword(FormKey.Factory("03037E:Fallout4.esm")); // WorkshopCanBePowered keyword
+                    pole.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
                 }
             }
         }
-
-        var cobjs = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == record.FormKey);
-        pole.craftable = cobjs.Any() && cobjs?.First() is not null;
 
         output.powerPoles.Add(pole);
         output.totalItems++;
