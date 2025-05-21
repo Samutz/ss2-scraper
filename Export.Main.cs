@@ -388,9 +388,9 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
     {
         BoundsSize size = new()
         {
-            X = (bounds.Second.X > bounds.First.X) ? bounds.Second.X - bounds.First.X : bounds.Second.X - bounds.First.X,
-            Y = (bounds.Second.Y > bounds.First.Y) ? bounds.Second.Y - bounds.First.Y : bounds.Second.Y - bounds.First.Y,
-            Z = (bounds.Second.Z > bounds.First.Z) ? bounds.Second.Z - bounds.First.Z : bounds.Second.Z - bounds.First.Z,
+            X = Math.Abs(bounds.Second.X -bounds.First.X),
+            Y = Math.Abs(bounds.Second.Y -bounds.First.Y),
+            Z = Math.Abs(bounds.Second.Z -bounds.First.Z),
         };
         return size;
     }
