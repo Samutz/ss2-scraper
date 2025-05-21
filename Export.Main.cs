@@ -474,7 +474,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
         {
-            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase)) continue;
             return script;
         }
         return null;
@@ -485,7 +485,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
         {
-            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase)) continue;
             return script;
         }
         return null;
@@ -496,7 +496,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
         {
-            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase)) continue;
             return script;
         }
         return null;
@@ -507,7 +507,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
         {
-            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase)) continue;
             return script;
         }
         return null;
@@ -518,7 +518,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
         {
-            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase)) continue;
             return script;
         }
         return null;
@@ -529,7 +529,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
         foreach (var script in record.VirtualMachineAdapter.Scripts)
         {
-            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase) || script.Properties.Count == 0) continue;
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase)) continue;
             return script;
         }
         return null;
