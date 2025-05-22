@@ -339,25 +339,30 @@ public partial class Export
 
     private void IndexHQRoomConfig(IMiscItemGetter record)
     {
-        HQRoomConfig roomConfig = new()
+        HQRoom room = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
+            type = "config",
+            functions = ["Empty Room"]
         };
 
+        /*
         if (record.Keywords is not null && record.Keywords.Count > 0)
         {
             foreach (var keyword in record.Keywords)
             {
                 if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
-                if (keywordKey.EditorID?.StartsWith("SS2C2_Tag_RoomShape_") ?? false) roomConfig.roomShape = keywordKey.EditorID;
+                if (keywordKey.EditorID?.StartsWith("SS2C2_Tag_RoomShape_") ?? false) room.roomShape = keywordKey.EditorID;
             }
         }
+        */
 
         var script = GetScript(record, "simsettlementsv2:hq:library:miscobjects:requirementtypes:actiontypes:hqroomconfig");
         if (script is null) return;
-        
+
+        /*
         var PrimaryDepartment = GetScriptProperty(script, "PrimaryDepartment") as ScriptObjectProperty;
         if (PrimaryDepartment?.Object is not null && linkCache.TryResolve<IPlacedObjectGetter>(PrimaryDepartment.Object.FormKey, out var objRef))
         {
@@ -366,34 +371,83 @@ public partial class Export
                 roomConfig.primaryDepartment = department.Name?.ToString() ?? "";
             }
         }
-
+        */
+        
         var RoomUpgradeSlots = GetScriptProperty(script, "RoomUpgradeSlots") as ScriptObjectListProperty;
         foreach (var slot in RoomUpgradeSlots?.Objects ?? [])
         {
-            roomConfig.upgradeSlots.Add(slot.Object.FormKey.ToString());
+            room.availableSlots.Add(slot.Object.FormKey.ToString());
         }
 
-        output.hqRoomConfigs.Add(roomConfig);
+        output.hqRooms.Add(room);
         output.totalItems++;
     }
 
     private void IndexHQRoomUpgrade(IMiscItemGetter record)
     {
-        HQRoomUpgrade roomUpgrade = new()
+        HQRoom room = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
         };
 
+        if (record.HasKeyword(FormKey.Factory("04B2F3:SS2.esm"))) room.type = "construction";
+        else if (record.HasKeyword(FormKey.Factory("04B2F4:SS2.esm"))) room.type = "upgrade";
+        else return;
+
         var script = GetScript(record, "SimSettlementsV2:HQ:BaseActionTypes:HQRoomUpgrade");
         if (script is null) return;
 
         var TargetUpgradeSlot = GetScriptProperty(script, "TargetUpgradeSlot") as ScriptObjectProperty;
-        roomUpgrade.targetUpgradeSlot = TargetUpgradeSlot?.Object.FormKey.ToString() ?? "";
+        room.targetUpgradeSlot = TargetUpgradeSlot?.Object.FormKey.ToString() ?? "";
 
-        if (record.HasKeyword(FormKey.Factory("04B2F3:SS2.esm"))) output.hqRoomConstructions.Add(roomUpgrade);
-        else if (record.HasKeyword(FormKey.Factory("04B2F4:SS2.esm"))) output.hqRoomUpgrades.Add(roomUpgrade);
+        var AdditionalUpgradeSlots = GetScriptProperty(script, "AdditionalUpgradeSlots") as ScriptObjectListProperty;
+        foreach (var misc in AdditionalUpgradeSlots?.Objects ?? [])
+        {
+            room.availableSlots.Add(misc.Object.FormKey.ToString());
+        }
+
+        var ProvidedFunctionality = GetScriptProperty(script, "ProvidedFunctionality") as ScriptObjectListProperty;
+        foreach (var misc in ProvidedFunctionality?.Objects ?? [])
+        {
+            if (!linkCache.TryResolve<IMiscItemGetter>(misc.Object.FormKey, out var miscItem)) continue;
+            if (miscItem.Name?.String is not null) room.functions.Add(miscItem.Name.String);
+        }
+
+        var RoomLayouts = GetScriptProperty(script, "RoomLayouts") as ScriptObjectListProperty;
+        List<string> authors = [];
+        foreach (var weap in RoomLayouts?.Objects ?? [])
+        {
+            if (!linkCache.TryResolve<IWeaponGetter>(weap.Object.FormKey, out var weapon)) continue;
+            HQRoomLayout layout = new()
+            {
+                formKey = weapon.FormKey.ToString(),
+                editorId = weapon.EditorID?.ToString() ?? "",
+                name = weapon.Name?.ToString() ?? "",
+            };
+
+            var weaponScript = GetScript(weapon, "SimSettlementsV2:HQ:Library:Weapons:HQRoomLayout");
+            if (weaponScript is null) continue;
+
+            var DesignerNameHolder = GetScriptProperty(weaponScript, "DesignerNameHolder") as ScriptObjectProperty;
+            if (DesignerNameHolder is not null && linkCache.TryResolve<IMiscItemGetter>(DesignerNameHolder.Object.FormKey, out var miscItem))
+            {
+                authors.Add(miscItem.Name?.ToString() ?? "");
+            }
+
+            if (room.description != "") continue;
+            var InformationMessage = GetScriptProperty(weaponScript, "InformationMessage") as ScriptObjectProperty;
+            if (InformationMessage is not null && linkCache.TryResolve<IMessageGetter>(InformationMessage.Object.FormKey, out var mesg))
+            {
+                room.description = mesg.Description.ToString() ?? room.description;
+            }
+
+            authors = [.. authors.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct()];
+            if (authors.Count != 0) room.author = string.Join(", ", authors);
+        }
+
+        output.hqRooms.Add(room);
         output.totalItems++;
     }
 

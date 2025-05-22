@@ -40,9 +40,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public List<BeerRecipe> beerRecipes = [];
         public List<CityPlan> cityPlans = [];
         public List<WorldRepopulationCell> worldRepopCells = [];
-        public List<HQRoomConfig> hqRoomConfigs = [];
-        public List<HQRoomUpgrade> hqRoomConstructions = [];
-        public List<HQRoomUpgrade> hqRoomUpgrades = [];
+        public List<HQRoom> hqRooms = [];
         public List<BaseItem> petNames = [];
     }
 
@@ -166,16 +164,18 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public bool hasLight = false;
     }
 
-    public class HQRoomConfig : BaseItem
-    {
-        public string roomShape = "";
-        public string primaryDepartment = "";
-        public List<string> upgradeSlots = [];
-    }
-
-    public class HQRoomUpgrade : BaseItem
+    public class HQRoom : BaseItem
     {
         public string targetUpgradeSlot = "";
+        public List<string> availableSlots = [];
+        public List<string> functions = [];
+        public string type = "";
+        public string author = "";
+    }
+
+    public class HQRoomLayout : BaseItem
+    {
+        public string author = "";
     }
 
     public class BeerRecipe : BaseItem
@@ -346,9 +346,11 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         }
     }
 
-    // SS2 CH2 doesn't register HQ stuff in its addon config
+    // SS2 CH2 doesn't register its own HQ items in its addon config
     private void IndexHQActionLists()
     {
+        if (mod.ModKey.FileName != "SS2_XPAC_Chapter2.esm") return;
+
         List<string> listKeys = [
             "027417:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_DefaultActions
             "01F16F:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Basement_DefaultActions
@@ -356,6 +358,14 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             "02649A:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_MidFloor_DefaultActions
             "027416:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_TutorialDefaultActions
             "034DCB:SS2_XPAC_Chapter2.esm", // SS2C2_HQActions_GNN_MQ24RegisterPostTutorial
+        ];
+
+        // additional actions that unlock from other means
+        List<string> actionKeys = [
+            "02A71F:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_GNNMainHallQuadrant_MedicalLab
+            "027A55:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_MQ_CommArrayRoom 
+            "02F553:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_MQ_MakeshiftInfirmary
+            "027A54:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_MQ_MeetingRoom
         ];
 
         foreach (var listKey in listKeys)
@@ -368,6 +378,15 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                     IndexMiscItem(miscItem);
                     continue;
                 }
+            }
+        }
+
+        foreach (var listKey in actionKeys)
+        {
+            if (linkCache.TryResolve<IMiscItemGetter>(FormKey.Factory(listKey), out var miscItem))
+            {
+                IndexMiscItem(miscItem);
+                continue;
             }
         }
     }
