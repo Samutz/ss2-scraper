@@ -1,6 +1,8 @@
 ## SS2Scraper-specific
-json/**
+json/
 config.json
+log.txt
+.vscode/
 
 ## A streamlined .gitignore for modern .NET projects
 ## including temporary files, build results, and
