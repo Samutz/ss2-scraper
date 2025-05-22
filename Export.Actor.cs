@@ -13,6 +13,7 @@ public partial class Export
             editorId = actor.EditorID?.ToString() ?? "",
             name = actor.Name?.ToString() ?? "",
             special = GetActorStats(actor),
+            plugin = actor.FormKey.ModKey.FileName
         };
         return baseActor;
     }

@@ -91,6 +91,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
     public class UniqueNpc : BaseItem
     {
         public ActorSpecial? special;
+        public string plugin = "";
     }
 
     public class UnlockableCharacter : BaseItem
