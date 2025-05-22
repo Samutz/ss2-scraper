@@ -180,7 +180,18 @@ public partial class Export
 
         var actorBaseFormProperty = GetScriptProperty(script, "ActorBaseForm") as ScriptStructProperty;
         IMajorRecordGetter? actorBaseForm = (actorBaseFormProperty is not null) ? GetFormFromUniversalForm(actorBaseFormProperty) : null;
-        if (actorBaseForm is INpcGetter actor) leaderCard.targetActor = GetBaseActor(actor);
+        if (actorBaseForm is INpcGetter actor)
+        {
+            leaderCard.targetActor = GetBaseActor(actor);
+        }
+        else if (actorBaseFormProperty?.Members.First() is not null)
+        {
+            var pluginNameProperty = GetScriptProperty(actorBaseFormProperty.Members.First(), "sPluginName") as ScriptStringProperty;
+            leaderCard.targetActor = new()
+            {
+                plugin = pluginNameProperty?.Data ?? ""
+            };
+        }
 
         var majorTraitProp = GetScriptProperty(script, "MajorTrait") as ScriptStructProperty;
         if (majorTraitProp?.Members.First().Properties.First() as ScriptObjectProperty is not null)
