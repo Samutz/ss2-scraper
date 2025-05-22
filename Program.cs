@@ -253,7 +253,6 @@ class Program
         foreach (var dlc in dlcs) listings.Add(new(ModKey.FromFileName(dlc), enabled: true));
         foreach (var masterFile in activeMod.ModHeader.MasterReferences)
         {
-            if (dlcs.Contains(masterFile.Master.FileName)) continue;
             string masterPath = Path.Combine(pluginDir, masterFile.Master.FileName);
             if (!File.Exists(masterPath))
             {
@@ -264,6 +263,8 @@ class Program
             listings.Add(new(ModKey.FromFileName(masterFile.Master.FileName), enabled: true));
         }
         listings.Add(new(ModKey.FromFileName(pluginFile), enabled: true));
+
+        listings = [..listings.Distinct()];
 
         var loadOrder = LoadOrder.Import<IFallout4ModGetter>(listings, GameRelease.Fallout4);
 
