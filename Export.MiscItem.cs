@@ -76,17 +76,16 @@ public partial class Export
     private void IndexUnlockableBuildingPlan(IMiscItemGetter record)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:UnlockableBuildingPlan");
-        if (script is not null)
-        {
-            var buildingPlan = GetScriptProperty(script, "BuildingPlan") as ScriptObjectProperty;
-            var planKey = buildingPlan?.Object.FormKey;
+        if (script is null) return;
+        
+        var buildingPlan = GetScriptProperty(script, "BuildingPlan") as ScriptObjectProperty;
+        var planKey = buildingPlan?.Object.FormKey;
 
-            if (!planKey.HasValue || !linkCache.TryResolve<IWeaponGetter>(planKey.Value, out var weapon)) return;
+        if (!planKey.HasValue || !linkCache.TryResolve<IWeaponGetter>(planKey.Value, out var weapon)) return;
 
-            UnlockableRequirements requirements = GetUnlockableRequirements(script);
+        UnlockableRequirements requirements = GetUnlockableRequirements(script);
 
-            IndexBuildingPlan(weapon, requirements);
-        }
+        IndexBuildingPlan(weapon, requirements);
     }
 
     private void IndexFoundation(IMiscItemGetter record)
@@ -193,12 +192,11 @@ public partial class Export
 
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:FurnitureStoreItem");
 
-        if (script is not null)
-        {
-            var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
-            if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
-        }
-
+        if (script is null) return;
+        
+        var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
+        if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
+        
         // actual furniture
         if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<IFurnitureGetter>(cobj.CreatedObject.FormKey, out var furniture))
         {
@@ -258,12 +256,11 @@ public partial class Export
 
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:PetStoreCreatureItem");
 
-        if (script is not null)
-        {
-            var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
-            if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
-        }
-
+        if (script is null) return;
+        
+        var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
+        if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
+        
         output.petStoreCreatures.Add(storeItem);
         output.totalItems++;
     }
@@ -476,21 +473,19 @@ public partial class Export
     private void IndexUnlockableFlag(IMiscItemGetter record)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:UnlockableFlag");
-        if (script is not null)
-        {
-            var buildingPlan = GetScriptProperty(script, "FlagThemeDefinition") as ScriptObjectProperty;
-            var planKey = buildingPlan?.Object.FormKey;
-
-            if (!planKey.HasValue || !linkCache.TryResolve<IArmorGetter>(planKey.Value, out var armor)) return;
-
-            UnlockableRequirements requirements = GetUnlockableRequirements(script);
-
-            IndexDynamicFlag(armor, requirements);
-        }
-    }
+        if (script is null) return;
     
+        var buildingPlan = GetScriptProperty(script, "FlagThemeDefinition") as ScriptObjectProperty;
+        var planKey = buildingPlan?.Object.FormKey;
 
-    private BaseItem GetLeaderTraitInfo(IMiscItemGetter record)
+        if (!planKey.HasValue || !linkCache.TryResolve<IArmorGetter>(planKey.Value, out var armor)) return;
+
+        UnlockableRequirements requirements = GetUnlockableRequirements(script);
+
+        IndexDynamicFlag(armor, requirements);
+    }
+
+    private BaseItem? GetLeaderTraitInfo(IMiscItemGetter record)
     {
         BaseItem trait = new()
         {
@@ -500,13 +495,12 @@ public partial class Export
         };
 
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:LeaderTrait");
-        if (script is not null)
+        if (script is null) return null;
+        
+        var descFormKey = (GetScriptProperty(script, "TraitDescriptionHolder") as ScriptObjectProperty)?.Object.FormKey;
+        if (descFormKey is not null && linkCache.TryResolve<IMiscItemGetter>(descFormKey.Value, out var miscItem))
         {
-            var descFormKey = (GetScriptProperty(script, "TraitDescriptionHolder") as ScriptObjectProperty)?.Object.FormKey;
-            if (descFormKey is not null && linkCache.TryResolve<IMiscItemGetter>(descFormKey.Value, out var miscItem))
-            {
-                trait.description = miscItem.Name?.ToString() ?? "";
-            }
+            trait.description = miscItem.Name?.ToString() ?? "";
         }
 
         return trait;

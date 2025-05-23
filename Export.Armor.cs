@@ -36,18 +36,17 @@ public partial class Export
         };
 
         var script = GetScript(record, "SimSettlementsV2:Armors:ThemeDefinition_Flags");
-        if (script is not null)
-        {
-            flag.hasFlagWaving = GetScriptProperty(script, "FlagWaving") as ScriptObjectProperty is not null;
-            flag.hasFlagDown = GetScriptProperty(script, "FlagDown") as ScriptObjectProperty is not null;
-            flag.hasFlagWall = GetScriptProperty(script, "FlagWall") as ScriptObjectProperty is not null;
-            flag.hasFlagHalfCircleFlag01 = GetScriptProperty(script, "FlagHalfCircleFlag01") as ScriptObjectProperty is not null;
-            flag.hasFlagHalfCircleFlag02 = GetScriptProperty(script, "FlagHalfCircleFlag02") as ScriptObjectProperty is not null;
-            flag.hasFlagBannerTownStatic = GetScriptProperty(script, "FlagBannerTownStatic") as ScriptObjectProperty is not null;
-            flag.hasFlagBannerTownTorn = GetScriptProperty(script, "FlagBannerTownTorn") as ScriptObjectProperty is not null;
-            flag.hasFlagBannerTownTornWaving = GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty is not null;
-        }
-
+        if (script is null) return;
+        
+        flag.hasFlagWaving = GetScriptProperty(script, "FlagWaving") as ScriptObjectProperty is not null;
+        flag.hasFlagDown = GetScriptProperty(script, "FlagDown") as ScriptObjectProperty is not null;
+        flag.hasFlagWall = GetScriptProperty(script, "FlagWall") as ScriptObjectProperty is not null;
+        flag.hasFlagHalfCircleFlag01 = GetScriptProperty(script, "FlagHalfCircleFlag01") as ScriptObjectProperty is not null;
+        flag.hasFlagHalfCircleFlag02 = GetScriptProperty(script, "FlagHalfCircleFlag02") as ScriptObjectProperty is not null;
+        flag.hasFlagBannerTownStatic = GetScriptProperty(script, "FlagBannerTownStatic") as ScriptObjectProperty is not null;
+        flag.hasFlagBannerTownTorn = GetScriptProperty(script, "FlagBannerTownTorn") as ScriptObjectProperty is not null;
+        flag.hasFlagBannerTownTornWaving = GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty is not null;
+        
         output.dynamicFlags.Add(flag);
         output.totalItems++;
     }

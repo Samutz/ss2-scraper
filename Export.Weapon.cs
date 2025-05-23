@@ -38,11 +38,6 @@ public partial class Export
 
     private void IndexBuildingPlan(IWeaponGetter record, UnlockableRequirements requirements)
     {
-        if (
-            record.VirtualMachineAdapter is null
-            || record.VirtualMachineAdapter.Scripts.Count == 0
-        ) return;
-
         BuildingPlan buildingPlan = new()
         {
             formKey = record.FormKey.ToString(),
@@ -66,29 +61,28 @@ public partial class Export
 
         // script properties
         var script = GetScript(record, "SimSettlementsV2:Weapons:BuildingPlan");
-        if (script is not null)
+        if (script is null) return;
+    
+        buildingPlan.isPlayerSelectOnly = (GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty)?.Data ?? false;
+
+        var descFormKey = (GetScriptProperty(script, "BuildingPlanDescription") as ScriptObjectProperty)?.Object.FormKey;
+        if (descFormKey is not null && linkCache.TryResolve<IWeaponModificationGetter>(descFormKey.Value, out var omod))
         {
-            buildingPlan.isPlayerSelectOnly = (GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty)?.Data ?? false;
+            buildingPlan.description = omod.Description?.ToString() ?? "";
+        }
 
-            var descFormKey = (GetScriptProperty(script, "BuildingPlanDescription") as ScriptObjectProperty)?.Object.FormKey;
-            if (descFormKey is not null && linkCache.TryResolve<IWeaponModificationGetter>(descFormKey.Value, out var omod))
+        var levelPlanListFormKey = (GetScriptProperty(script, "LevelPlansList") as ScriptObjectProperty)?.Object.FormKey;
+        if (levelPlanListFormKey is not null && linkCache.TryResolve<IFormListGetter>(levelPlanListFormKey.Value, out var formList))
+        {
+            foreach (var item in formList.Items)
             {
-                buildingPlan.description = omod.Description?.ToString() ?? "";
-            }
-
-            var levelPlanListFormKey = (GetScriptProperty(script, "LevelPlansList") as ScriptObjectProperty)?.Object.FormKey;
-            if (levelPlanListFormKey is not null && linkCache.TryResolve<IFormListGetter>(levelPlanListFormKey.Value, out var formList))
-            {
-                foreach (var item in formList.Items)
+                if (!linkCache.TryResolve<IWeaponGetter>(item.FormKey, out var levelPlanWeapon)) continue;
+                var levelPlan = IndexBuildingLevelPlan(levelPlanWeapon);
+                if (levelPlan is not null)
                 {
-                    if (!linkCache.TryResolve<IWeaponGetter>(item.FormKey, out var levelPlanWeapon)) continue;
-                    var levelPlan = IndexBuildingLevelPlan(levelPlanWeapon);
-                    if (levelPlan is not null)
-                    {
-                        buildingPlan.maxOccupants = (levelPlan.maxOccupants > buildingPlan.maxOccupants) ? levelPlan.maxOccupants : buildingPlan.maxOccupants;
-                        buildingPlan.maxLevel = (levelPlan.level > buildingPlan.maxLevel) ? levelPlan.level : buildingPlan.maxLevel;
-                        buildingPlan.levelPlans.Add(levelPlan);
-                    }
+                    buildingPlan.maxOccupants = (levelPlan.maxOccupants > buildingPlan.maxOccupants) ? levelPlan.maxOccupants : buildingPlan.maxOccupants;
+                    buildingPlan.maxLevel = (levelPlan.level > buildingPlan.maxLevel) ? levelPlan.level : buildingPlan.maxLevel;
+                    buildingPlan.levelPlans.Add(levelPlan);
                 }
             }
         }
@@ -110,58 +104,58 @@ public partial class Export
 
         // script properties
         var script = GetScript(record, "SimSettlementsV2:Weapons:BuildingLevelPlan");
-        if (script is not null)
+        if (script is null) return null;
+        
+        buildingLevelPlan.maxOccupants = (GetScriptProperty(script, "iMaxOccupants") as ScriptIntProperty)?.Data ?? 1;
+        buildingLevelPlan.level = (GetScriptProperty(script, "iRequiredLevel") as ScriptIntProperty)?.Data ?? 1;
+
+        var jobTitles = (GetScriptProperty(script, "JobTitle") as ScriptObjectListProperty)?.Objects ?? [];
+        foreach (var titleKey in jobTitles)
         {
-            buildingLevelPlan.maxOccupants = (GetScriptProperty(script, "iMaxOccupants") as ScriptIntProperty)?.Data ?? 1;
-            buildingLevelPlan.level = (GetScriptProperty(script, "iRequiredLevel") as ScriptIntProperty)?.Data ?? 1;
+            if (!linkCache.TryResolve<IMessageGetter>(titleKey.Object.FormKey, out var mesg)) continue;
+            if (mesg?.Name?.String is not null) buildingLevelPlan.jobTitles.Add(mesg?.Name?.String ?? "");
+        }
 
-            var jobTitles = (GetScriptProperty(script, "JobTitle") as ScriptObjectListProperty)?.Objects ?? [];
-            foreach (var titleKey in jobTitles)
+        var jobUniforms = (GetScriptProperty(script, "AutoEquip") as ScriptObjectListProperty)?.Objects ?? [];
+        foreach (var uniformKey in jobUniforms)
+        {
+            if (linkCache.TryResolve<IFormListGetter>(uniformKey.Object.FormKey, out var formList))
             {
-                if (!linkCache.TryResolve<IMessageGetter>(titleKey.Object.FormKey, out var mesg)) continue;
-                if (mesg?.Name?.String is not null) buildingLevelPlan.jobTitles.Add(mesg?.Name?.String ?? "");
-            }
-
-            var jobUniforms = (GetScriptProperty(script, "AutoEquip") as ScriptObjectListProperty)?.Objects ?? [];
-            foreach (var uniformKey in jobUniforms)
-            {
-                if (linkCache.TryResolve<IFormListGetter>(uniformKey.Object.FormKey, out var formList))
+                foreach (var item in formList.Items)
                 {
-                    foreach (var item in formList.Items)
+                    if (!linkCache.TryResolve<IMajorRecordGetter>(item.FormKey, out var itemForm)) continue;
+                    if (itemForm is IWeaponGetter)
                     {
-                        if (!linkCache.TryResolve<IMajorRecordGetter>(item.FormKey, out var itemForm)) continue;
-                        if (itemForm is IWeaponGetter)
-                        {
-                            var itemForm2 = itemForm as IWeaponGetter;
-                            if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
-                        }
-                        if (itemForm is IArmorGetter)
-                        {
-                            var itemForm2 = itemForm as IArmorGetter;
-                            if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
-                        }
+                        var itemForm2 = itemForm as IWeaponGetter;
+                        if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
+                    }
+                    if (itemForm is IArmorGetter)
+                    {
+                        var itemForm2 = itemForm as IArmorGetter;
+                        if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
                     }
                 }
-                else if (linkCache.TryResolve<IOutfitGetter>(uniformKey.Object.FormKey, out var outfit))
+            }
+            else if (linkCache.TryResolve<IOutfitGetter>(uniformKey.Object.FormKey, out var outfit))
+            {
+                if (outfit.Items is null) continue;
+                foreach (var item in outfit.Items)
                 {
-                    if (outfit.Items is null) continue;
-                    foreach (var item in outfit.Items)
+                    if (!linkCache.TryResolve<IMajorRecordGetter>(item.FormKey, out var itemForm)) continue;
+                    if (itemForm is IWeaponGetter)
                     {
-                        if (!linkCache.TryResolve<IMajorRecordGetter>(item.FormKey, out var itemForm)) continue;
-                        if (itemForm is IWeaponGetter)
-                        {
-                            var itemForm2 = itemForm as IWeaponGetter;
-                            if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
-                        }
-                        if (itemForm is IArmorGetter)
-                        {
-                            var itemForm2 = itemForm as IArmorGetter;
-                            if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
-                        }
+                        var itemForm2 = itemForm as IWeaponGetter;
+                        if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
+                    }
+                    if (itemForm is IArmorGetter)
+                    {
+                        var itemForm2 = itemForm as IArmorGetter;
+                        if (itemForm2?.Name?.String is not null) buildingLevelPlan.jobUniform.Add(itemForm2.Name.String ?? "");
                     }
                 }
             }
         }
+        
 
         return buildingLevelPlan;
     }
@@ -215,7 +209,8 @@ public partial class Export
                 {
                     if (linkCache.TryResolve<IMiscItemGetter>((member1 as ScriptObjectProperty ?? new()).Object.FormKey, out var record1))
                     {
-                        leaderCard.minorTraits.Add(GetLeaderTraitInfo(record1));
+                        var traits = GetLeaderTraitInfo(record1);
+                        if (traits is not null) leaderCard.minorTraits.Add(traits);
                     }
                 }
             }
@@ -230,7 +225,8 @@ public partial class Export
                 {
                     if (linkCache.TryResolve<IMiscItemGetter>((member1 as ScriptObjectProperty ?? new()).Object.FormKey, out var record1))
                     {
-                        leaderCard.weaknesses.Add(GetLeaderTraitInfo(record1));
+                        var traits = GetLeaderTraitInfo(record1);
+                        if (traits is not null) leaderCard.weaknesses.Add(traits);
                     }
                 }
             }
@@ -244,55 +240,55 @@ public partial class Export
     private void IndexBuildingSkin(IWeaponGetter record)
     {
         var script = GetScript(record, "SimSettlementsV2:Weapons:BuildingSkin");
-        if (script is not null)
+        if (script is null) return;
+        
+        var buildingPlan = GetScriptProperty(script, "TargetBuildingPlan") as ScriptObjectProperty;
+        var planKey = buildingPlan?.Object.FormKey;
+
+        if (planKey is null) return;
+
+        BuildingPlanSkin skin = new()
         {
-            var buildingPlan = GetScriptProperty(script, "TargetBuildingPlan") as ScriptObjectProperty;
-            var planKey = buildingPlan?.Object.FormKey;
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            targetPlan = planKey?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "",
+        };
 
-            if (planKey is null) return;
+        var isPlayerSelectOnly = GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty;
+        skin.isPlayerSelectOnly = isPlayerSelectOnly?.Data ?? false;
 
-            BuildingPlanSkin skin = new()
-            {
-                formKey = record.FormKey.ToString(),
-                editorId = record.EditorID?.ToString() ?? "",
-                targetPlan = planKey?.ToString() ?? "",
-                name = record.Name?.ToString() ?? "",
-            };
-
-            var isPlayerSelectOnly = GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty;
-            skin.isPlayerSelectOnly = isPlayerSelectOnly?.Data ?? false;
-
-            var descFormKey = (GetScriptProperty(script, "BuildingPlanSkinDescription") as ScriptObjectProperty)?.Object.FormKey;
-            if (descFormKey is not null && linkCache.TryResolve<IWeaponModificationGetter>(descFormKey.Value, out var omod))
-            {
-                skin.description = omod.Description?.ToString() ?? "";
-            }
-
-            var levelSkins = (GetScriptProperty(script, "LevelSkins") as ScriptObjectListProperty)?.Objects ?? [];
-            foreach (var levelKey in levelSkins)
-            {
-                if (!linkCache.TryResolve<IWeaponGetter>(levelKey.Object.FormKey, out var levelSkin)) continue;
-                BaseItem newLevelSkin = new()
-                {
-                    formKey = levelSkin.FormKey.ToString(),
-                    editorId = levelSkin.EditorID?.ToString() ?? "",
-                    name = levelSkin.Name?.ToString() ?? "",
-                };
-                if (levelSkin?.Name?.String is not null) skin.levelSkins.Add(newLevelSkin);
-            }
-
-            // keywords
-            if (record.Keywords is not null && record.Keywords.Count > 0)
-            {
-                foreach(var keyword in record.Keywords)
-                {
-                    if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
-                    if (keywordKey.EditorID?.StartsWith("SS2_ThemeTag_") ?? false) skin.tags.Add(keywordKey.EditorID[13..]);
-                }
-            }
-
-            output.buildingPlanSkins.Add(skin);
-            output.totalItems++;
+        var descFormKey = (GetScriptProperty(script, "BuildingPlanSkinDescription") as ScriptObjectProperty)?.Object.FormKey;
+        if (descFormKey is not null && linkCache.TryResolve<IWeaponModificationGetter>(descFormKey.Value, out var omod))
+        {
+            skin.description = omod.Description?.ToString() ?? "";
         }
+
+        var levelSkins = (GetScriptProperty(script, "LevelSkins") as ScriptObjectListProperty)?.Objects ?? [];
+        foreach (var levelKey in levelSkins)
+        {
+            if (!linkCache.TryResolve<IWeaponGetter>(levelKey.Object.FormKey, out var levelSkin)) continue;
+            BaseItem newLevelSkin = new()
+            {
+                formKey = levelSkin.FormKey.ToString(),
+                editorId = levelSkin.EditorID?.ToString() ?? "",
+                name = levelSkin.Name?.ToString() ?? "",
+            };
+            if (levelSkin?.Name?.String is not null) skin.levelSkins.Add(newLevelSkin);
+        }
+
+        // keywords
+        if (record.Keywords is not null && record.Keywords.Count > 0)
+        {
+            foreach(var keyword in record.Keywords)
+            {
+                if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
+                if (keywordKey.EditorID?.StartsWith("SS2_ThemeTag_") ?? false) skin.tags.Add(keywordKey.EditorID[13..]);
+            }
+        }
+
+        output.buildingPlanSkins.Add(skin);
+        output.totalItems++;
+        
     }
 }
