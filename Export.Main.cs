@@ -141,6 +141,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public int vendorLevel = 1;
         public string type = "other";
         public int value = 0;
+        public int displayType = 0;
     }
 
     public class PetStoreCreature : BaseItem

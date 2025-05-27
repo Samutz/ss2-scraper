@@ -196,6 +196,9 @@ public partial class Export
         
         var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
         if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
+
+        var iPositionGroup = GetScriptProperty(script, "iPositionGroup") as ScriptIntProperty;
+        if (iPositionGroup?.Data is not null) storeItem.displayType = iPositionGroup.Data;
         
         // actual furniture
         if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<IFurnitureGetter>(cobj.CreatedObject.FormKey, out var furniture))
