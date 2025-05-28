@@ -226,7 +226,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
 
     private List<FormKey?> GetAddonConfigFormKeys()
     {
-        List<FormKey?> addonConfigKeys = [];
+        List<FormKey> addonConfigKeys = [];
 
         foreach (var quest in mod.Quests)
         {
@@ -238,8 +238,8 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             var script = GetScript(quest, "SimSettlementsV2:quests:AddonPack");
             if (script is not null)
             {
-                var property = GetScriptProperty(script, "MyAddonConfig");
-                addonConfigKeys.Add((property as ScriptObjectProperty)?.Object.FormKey);
+                if (GetScriptProperty(script, "MyAddonConfig") is not ScriptObjectProperty property) continue;
+                addonConfigKeys.Add(property.Object.FormKey);
             }
         }
 
@@ -250,7 +250,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
     {
         var addonConfigKeys = GetAddonConfigFormKeys();
 
-        List<FormKey?> formListKeys = [];
+        List<FormKey> formListKeys = [];
 
         foreach (var formKey in addonConfigKeys)
         {
@@ -484,7 +484,10 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         foreach (var property in script.Properties)
         {
             if (property is null) continue;
-            if (property.Name == propertyName) return property as ScriptProperty;
+            if (property.Name.Equals(propertyName, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return property as ScriptProperty;
+            }
         }
         return null;
     }

@@ -16,7 +16,7 @@ public partial class Export
         {
             if (script is null) continue;
 
-            switch (script.Name.ToLower())
+            switch (script.Name.ToLower().Trim('\0'))
             {
                 case "simsettlementsv2:books:beerrecipe":
                     IndexBeerRecipe(record);
