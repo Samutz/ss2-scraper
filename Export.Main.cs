@@ -173,6 +173,8 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public List<string> functions = [];
         public string type = "";
         public string author = "";
+        public string shape = "";
+        public string primaryDepartment = "";
     }
 
     public class HQRoomLayout : BaseItem

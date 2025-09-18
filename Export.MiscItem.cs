@@ -344,34 +344,29 @@ public partial class Export
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
-            type = "config",
-            functions = ["Empty Room"]
+            type = "config"
         };
 
-        /*
         if (record.Keywords is not null && record.Keywords.Count > 0)
         {
             foreach (var keyword in record.Keywords)
             {
                 if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
-                if (keywordKey.EditorID?.StartsWith("SS2C2_Tag_RoomShape_") ?? false) room.roomShape = keywordKey.EditorID;
+                if (keywordKey.EditorID?.StartsWith("SS2C2_Tag_RoomShape_") ?? false) room.shape = keywordKey.EditorID;
             }
         }
-        */
 
         var script = GetScript(record, "simsettlementsv2:hq:library:miscobjects:requirementtypes:actiontypes:hqroomconfig");
         if (script is null) return;
 
-        /*
         var PrimaryDepartment = GetScriptProperty(script, "PrimaryDepartment") as ScriptObjectProperty;
         if (PrimaryDepartment?.Object is not null && linkCache.TryResolve<IPlacedObjectGetter>(PrimaryDepartment.Object.FormKey, out var objRef))
         {
             if (objRef.Base is not null && linkCache.TryResolve<IActivatorGetter>(objRef.Base.FormKey, out var department))
             {
-                roomConfig.primaryDepartment = department.Name?.ToString() ?? "";
+                room.primaryDepartment = department.Name?.ToString() ?? "";
             }
         }
-        */
         
         var RoomUpgradeSlots = GetScriptProperty(script, "RoomUpgradeSlots") as ScriptObjectListProperty;
         foreach (var slot in RoomUpgradeSlots?.Objects ?? [])
@@ -420,12 +415,6 @@ public partial class Export
         foreach (var weap in RoomLayouts?.Objects ?? [])
         {
             if (!linkCache.TryResolve<IWeaponGetter>(weap.Object.FormKey, out var weapon)) continue;
-            HQRoomLayout layout = new()
-            {
-                formKey = weapon.FormKey.ToString(),
-                editorId = weapon.EditorID?.ToString() ?? "",
-                name = weapon.Name?.ToString() ?? "",
-            };
 
             var weaponScript = GetScript(weapon, "SimSettlementsV2:HQ:Library:Weapons:HQRoomLayout");
             if (weaponScript is null) continue;
