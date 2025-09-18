@@ -211,7 +211,11 @@ public partial class Export
                 storeItem.type = "furniture_bed";
             }
 
-            if (furniture.HasAnyKeyword([FormKey.Factory("030BB2:Fallout4.esm"), FormKey.Factory("1338F7:Fallout4.esm")])) // chair anim keywords
+            if (furniture.HasAnyKeyword([
+                FormKey.Factory("030BB2:Fallout4.esm"), // chair sit
+                FormKey.Factory("1338F7:Fallout4.esm"), // newspaper sitting
+                FormKey.Factory("074EC7:Fallout4.esm"), // bar stool
+            ])) // chair anim keywords
             {
                 storeItem.type = "furniture_chair";
             }
