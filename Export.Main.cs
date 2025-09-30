@@ -127,6 +127,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public string targetSettlement = "";
         public List<string> plugins = [];
         public string author = "";
+        public bool isOutpostPlan = false;
     }
 
     public class WorldRepopulationCell : BaseItem
@@ -418,14 +419,14 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return size;
     }
 
-    private IMajorRecordGetter? GetFormFromUniversalForm(ScriptStructProperty UniversalFormProperty)
+    private FormKey? GetFormKeyFromUniversalForm(ScriptStructProperty UniversalFormProperty)
     {
         if (UniversalFormProperty?.Members?.First() is null || UniversalFormProperty?.Members.First().Properties is null) return null;
 
         // direct reference
         var actorBaseFormProperty = GetScriptProperty(UniversalFormProperty.Members.First(), "BaseForm") as ScriptObjectProperty;
         if (actorBaseFormProperty is not null && linkCache.TryResolve<IMajorRecordGetter>(actorBaseFormProperty.Object.FormKey, out var record1))
-            return record1;
+            return record1.FormKey;
 
         // indirect reference
         var pluginNameProperty = GetScriptProperty(UniversalFormProperty.Members.First(), "sPluginName") as ScriptStringProperty;
@@ -436,6 +437,13 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         string formIdHex = string.Format("{0:X6}", formIdProperty.Data);
         string formKeyString = $"{formIdHex}:{pluginNameProperty.Data}";
         if (!FormKey.TryFactory(formKeyString, out var finalFormKey)) return null;
+
+        return finalFormKey;
+    }
+
+    private IMajorRecordGetter? GetFormFromUniversalForm(ScriptStructProperty UniversalFormProperty)
+    {
+        FormKey finalFormKey = GetFormKeyFromUniversalForm(UniversalFormProperty) ?? new FormKey();
         if (!linkCache.TryResolve<IMajorRecordGetter>(finalFormKey, out var record2)) return null;
 
         return record2;

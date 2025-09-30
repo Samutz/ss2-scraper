@@ -312,6 +312,9 @@ public partial class Export
         var maxLevel = GetScriptProperty(script, "iLevelCount") as ScriptIntProperty;
         plan.maxLevel = maxLevel?.Data ?? 1;
 
+        var isOutpostPlan = GetScriptProperty(script, "bOutpostPlan") as ScriptBoolProperty;
+        plan.isOutpostPlan = isOutpostPlan?.Data ?? false;
+
         var isPlayerSelectOnly = GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty;
         plan.isPlayerSelectOnly = isPlayerSelectOnly?.Data ?? false;
 
@@ -319,8 +322,7 @@ public partial class Export
         plan.supportedNPCs = supportedNPCs?.Data ?? [0];
 
         var workshopRef = GetScriptProperty(script, "workshopRef") as ScriptStructProperty;
-        IMajorRecordGetter? workbenchBaseForm = (workshopRef is not null) ? GetFormFromUniversalForm(workshopRef) : null;
-        plan.targetSettlement = workbenchBaseForm?.FormKey.ToString() ?? "";
+        if (workshopRef is not null) plan.targetSettlement = GetFormKeyFromUniversalForm(workshopRef)?.ToString() ?? "";
 
         var plugins = GetScriptProperty(script, "sPluginsUsed") as ScriptStringListProperty;
         plan.plugins = plugins?.Data ?? [];
