@@ -64,6 +64,8 @@ public partial class Export
         if (script is null) return;
     
         buildingPlan.isPlayerSelectOnly = (GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty)?.Data ?? false;
+        buildingPlan.isMarvel = (GetScriptProperty(script, "bArchitecturalMarvel") as ScriptBoolProperty)?.Data ?? false;
+        buildingPlan.isBranching = (GetScriptProperty(script, "bIsBranchingPlan") as ScriptBoolProperty)?.Data ?? false;
 
         var descFormKey = (GetScriptProperty(script, "BuildingPlanDescription") as ScriptObjectProperty)?.Object.FormKey;
         if (descFormKey is not null && linkCache.TryResolve<IWeaponModificationGetter>(descFormKey.Value, out var omod))

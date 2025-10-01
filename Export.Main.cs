@@ -63,6 +63,8 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public List<BuildingLevelPlan> levelPlans = [];
         public int maxLevel = 3;
         public int maxOccupants = 1;
+        public bool isMarvel = false;
+        public bool isBranching = false;
     }
 
     public class UnlockableRequirements
