@@ -68,6 +68,10 @@ public partial class Export
                     IndexHQRoomUpgrade(record);
                     continue;
 
+                case "simsettlementsv2:miscobjects:settlerlocationdiscovery":
+                    IndexSettlerLocationDiscovery(record);
+                    continue;
+
                 default: continue;
             }
         }
@@ -77,7 +81,7 @@ public partial class Export
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:UnlockableBuildingPlan");
         if (script is null) return;
-        
+
         var buildingPlan = GetScriptProperty(script, "BuildingPlan") as ScriptObjectProperty;
         var planKey = buildingPlan?.Object.FormKey;
 
@@ -193,13 +197,13 @@ public partial class Export
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:FurnitureStoreItem");
 
         if (script is null) return;
-        
+
         var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
         if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
 
         var iPositionGroup = GetScriptProperty(script, "iPositionGroup") as ScriptIntProperty;
         if (iPositionGroup?.Data is not null) storeItem.displayType = iPositionGroup.Data;
-        
+
         // actual furniture
         if (cobj?.CreatedObject.FormKey is not null && linkCache.TryResolve<IFurnitureGetter>(cobj.CreatedObject.FormKey, out var furniture))
         {
@@ -264,10 +268,10 @@ public partial class Export
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:PetStoreCreatureItem");
 
         if (script is null) return;
-        
+
         var iVendorLevel = GetScriptProperty(script, "iVendorLevel") as ScriptIntProperty;
         if (iVendorLevel?.Data is not null) storeItem.vendorLevel = iVendorLevel.Data;
-        
+
         output.petStoreCreatures.Add(storeItem);
         output.totalItems++;
     }
@@ -373,7 +377,7 @@ public partial class Export
                 room.primaryDepartment = department.Name?.ToString() ?? "";
             }
         }
-        
+
         var RoomUpgradeSlots = GetScriptProperty(script, "RoomUpgradeSlots") as ScriptObjectListProperty;
         foreach (var slot in RoomUpgradeSlots?.Objects ?? [])
         {
@@ -472,7 +476,7 @@ public partial class Export
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:UnlockableFlag");
         if (script is null) return;
-    
+
         var buildingPlan = GetScriptProperty(script, "FlagThemeDefinition") as ScriptObjectProperty;
         var planKey = buildingPlan?.Object.FormKey;
 
@@ -494,7 +498,7 @@ public partial class Export
 
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:LeaderTrait");
         if (script is null) return null;
-        
+
         var descFormKey = (GetScriptProperty(script, "TraitDescriptionHolder") as ScriptObjectProperty)?.Object.FormKey;
         if (descFormKey is not null && linkCache.TryResolve<IMiscItemGetter>(descFormKey.Value, out var miscItem))
         {
@@ -502,5 +506,26 @@ public partial class Export
         }
 
         return trait;
+    }
+
+    private void IndexSettlerLocationDiscovery(IMiscItemGetter record)
+    {      
+        var script = GetScript(record, "simsettlementsv2:miscobjects:settlerlocationdiscovery");
+        if (script is null) return;
+
+        var registerForms = GetScriptProperty(script, "RegisterForms") as ScriptStructListProperty;
+        if (registerForms?.Structs.Count > 0)
+        {
+            foreach (ScriptEntryStructs struct1 in registerForms.Structs)
+            {
+                foreach (ScriptObjectProperty member in struct1.Members.Cast<ScriptObjectProperty>())
+                {
+                    if (member is not null && member.Name == "FormToInject")
+                    {
+                        IndexAddonItem(member.Object.FormKey);
+                    }
+                }
+            }
+        }
     }
 }

@@ -317,40 +317,46 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         foreach (var formKey in itemKeys)
         {
             if (formKey is null) continue;
-            if (linkCache.TryResolve<IKeywordGetter>(formKey.Value, out var keyword)) continue; // skip keywords
-            if (linkCache.TryResolve<IStaticCollectionGetter>(formKey.Value, out var scol)) continue; // skip SCOLs
-            if (linkCache.TryResolve<IStaticGetter>(formKey.Value, out var staticObj)) continue; // skip statics
-            if (linkCache.TryResolve<IPlacedObjectGetter>(formKey.Value, out var objRef)) continue; // skip objectrefs
-            if (linkCache.TryResolve<IGlobalGetter>(formKey.Value, out var globalVar)) continue; // skip globals
-            if (linkCache.TryResolve<IQuestGetter>(formKey.Value, out var quest)) continue;
-            if (linkCache.TryResolve<IActivatorGetter>(formKey.Value, out var activator)) continue;
-
-            if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem))
-            {
-                IndexMiscItem(miscItem);
-                continue;
-            }
-
-            if (linkCache.TryResolve<IWeaponGetter>(formKey.Value, out var weapon))
-            {
-                IndexWeapon(weapon);
-                continue;
-            }
-
-            if (linkCache.TryResolve<IArmorGetter>(formKey.Value, out var armor))
-            {
-                IndexArmor(armor);
-                continue;
-            }
-
-            if (linkCache.TryResolve<IBookGetter>(formKey.Value, out var book))
-            {
-                IndexBook(book);
-                continue;
-            }
-
-            Console.WriteLine($"Found UNKNOWN AddonItem: {formKey}");
+            IndexAddonItem(formKey);
         }
+    }
+
+    private void IndexAddonItem(FormKey? formKey)
+    {
+        if (formKey is null) return;
+        if (linkCache.TryResolve<IKeywordGetter>(formKey.Value, out var keyword)) return; // skip keywords
+        if (linkCache.TryResolve<IStaticCollectionGetter>(formKey.Value, out var scol)) return; // skip SCOLs
+        if (linkCache.TryResolve<IStaticGetter>(formKey.Value, out var staticObj)) return; // skip statics
+        if (linkCache.TryResolve<IPlacedObjectGetter>(formKey.Value, out var objRef)) return; // skip objectrefs
+        if (linkCache.TryResolve<IGlobalGetter>(formKey.Value, out var globalVar)) return; // skip globals
+        if (linkCache.TryResolve<IQuestGetter>(formKey.Value, out var quest)) return;
+        if (linkCache.TryResolve<IActivatorGetter>(formKey.Value, out var activator)) return;
+
+        if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem))
+        {
+            IndexMiscItem(miscItem);
+            return;
+        }
+
+        if (linkCache.TryResolve<IWeaponGetter>(formKey.Value, out var weapon))
+        {
+            IndexWeapon(weapon);
+            return;
+        }
+
+        if (linkCache.TryResolve<IArmorGetter>(formKey.Value, out var armor))
+        {
+            IndexArmor(armor);
+            return;
+        }
+
+        if (linkCache.TryResolve<IBookGetter>(formKey.Value, out var book))
+        {
+            IndexBook(book);
+            return;
+        }
+
+        Console.WriteLine($"Found UNKNOWN AddonItem: {formKey}");
     }
 
     // SS2 CH2 doesn't register its own HQ items in its addon config
