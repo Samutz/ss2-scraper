@@ -1,8 +1,6 @@
-﻿using System.Text;
-using Mutagen.Bethesda;
+﻿using Mutagen.Bethesda;
 using Mutagen.Bethesda.Environments;
 using Mutagen.Bethesda.Fallout4;
-using Mutagen.Bethesda.Json;
 using Mutagen.Bethesda.Oblivion;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -15,18 +13,9 @@ namespace SS2Scraper;
 
 class Program
 {
-    public class ApiConfig
-    {
-        public string Api_key { get; set; } = string.Empty;
-        public string Base_url { get; set; } = string.Empty;
-        public bool Ignore_ssl { get; set; } = false;
-    }
-
-    static async Task Main(string[] args)
+    static void Main(string[] args)
     {
         string? filePath = null;
-        bool doUpload = false;
-        bool doJSON = false;
         bool doMO2 = false;
         string modListPath = "";
         List<Export.ModMetadata> metadataCache = [];
@@ -37,12 +26,6 @@ class Program
 
             switch (args[i].ToLower())
             {
-                case "-upload":
-                    doUpload = true;
-                    continue;
-                case "-json":
-                    doJSON = true;
-                    continue;
                 case "-mo2":
                     if (!File.Exists(nextArg) || !(Path.GetFileName(nextArg) == "modlist.txt")) throw new ArgumentException("-mo2 requires a valid path to modlist.txt as the next argument");
                     doMO2 = true;
@@ -58,9 +41,6 @@ class Program
             }
         }
 
-        Console.WriteLine($"Upload: {doUpload}");
-        Console.WriteLine($"JSON: {doJSON}");
-
         List<string> modPaths = [];
 
         // dedicated log for stuff more important than the general output
@@ -69,26 +49,6 @@ class Program
         {
             string exePath = AppDomain.CurrentDomain.BaseDirectory;
             logPath = Path.Combine(exePath, logPath); // set to exe folder for published exe
-        }
-
-        ApiConfig config = new();
-
-        // check config early
-        if (doUpload)
-        {
-            var settings = new JsonSerializerSettings();
-            settings.AddMutagenConverters();
-
-            string configPath = "config.json";
-            if (!File.Exists(configPath)) // check for local path when debugging first
-            {
-                string exePath = AppDomain.CurrentDomain.BaseDirectory;
-                configPath = Path.Combine(exePath, configPath); // set to exe folder for published exe
-            }
-            if (!File.Exists(configPath)) throw new ArgumentException("Config file is missing");
-            string configJson = File.ReadAllText(configPath);
-            config = JsonConvert.DeserializeObject<ApiConfig>(configJson) ?? new ApiConfig();
-            if (config.Api_key.Equals("") || config.Base_url.Equals("")) throw new ArgumentException("Config has empty values");
         }
 
         string[] allowedExtensions = [".esm", ".esp", ".esl"];
@@ -157,21 +117,13 @@ class Program
 
             if (output.totalItems == 0)
             {
-                Console.WriteLine("No SS2 items found in this plugin. Skipping upload/json export.");
+                Console.WriteLine("No SS2 items found in this plugin. Skipping json export.");
                 continue;
             }
 
-            if (doJSON)
-            {
-                if (!Directory.Exists(".\\json")) Directory.CreateDirectory(".\\json");
-                var json = JsonConvert.SerializeObject(output);
-                File.WriteAllText($".\\json\\{pluginFile}.json", json);
-            }
-
-            if (doUpload)
-            {
-                await UploadJson(config, output);
-            }
+            if (!Directory.Exists(".\\json")) Directory.CreateDirectory(".\\json");
+            var json = JsonConvert.SerializeObject(output);
+            File.WriteAllText($".\\json\\{pluginFile}.json", json);
         }
     }
 
@@ -179,49 +131,6 @@ class Program
     {
         string logPath = "log.txt";
         File.AppendAllText(logPath, $"{DateTime.Now}: {message}" + Environment.NewLine);
-    }
-
-    private static async Task UploadJson(ApiConfig? config, Export.Output output)
-    {
-        if (config?.Base_url is null || config?.Api_key is null) throw new ArgumentException("Json config missing");
-
-        Uri base_url = new(config.Base_url);
-
-        HttpClientHandler handler = new();
-        if (config?.Ignore_ssl ?? false)
-        {
-            Console.WriteLine($"setting ignore SSL");
-            handler = new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) =>
-                {
-                    return true;
-                }
-            };
-        }
-
-        HttpClient httpClient = new(handler)
-        {
-            BaseAddress = base_url,
-        };
-        using StringContent jsonContent = new(
-            JsonConvert.SerializeObject(new
-            {
-                api_key = config?.Api_key,
-                content = output
-            }),
-            Encoding.UTF8,
-            "application/json"
-        );
-
-        Console.WriteLine($"Starting HTTP");
-
-        using HttpResponseMessage response = await httpClient.PostAsync("api/upload_json", jsonContent);
-        response.EnsureSuccessStatusCode();
-
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"{jsonResponse}\n");
     }
 
     private static (IFallout4ModDisposableGetter?, ILinkCache?) LoadMod(string pluginFullpath)
