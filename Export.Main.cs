@@ -227,6 +227,15 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         IndexAddonItems();
         IndexHQActionLists();
 
+        switch (mod.ModKey.FileName.ToString())
+        {
+            case "IDEKsLogisticsStation2.esl":
+                // BPs injected by ILS2's custom quest
+                IndexAddonItem(FormKey.Factory("000BC6:IDEKsLogisticsStation2.esl"), null);
+                IndexAddonItem(FormKey.Factory("000BCC:IDEKsLogisticsStation2.esl"), null);
+                break;
+        }
+
         return output;
     }
 
