@@ -17,6 +17,8 @@ class Program
     {
         string? filePath = null;
         bool doMO2 = false;
+        bool doLoadOrderMode = false;
+        bool doSingleMode = true;
         string modListPath = "";
         List<Export.ModMetadata> metadataCache = [];
 
@@ -31,12 +33,20 @@ class Program
                     doMO2 = true;
                     modListPath = nextArg;
                     continue;
-                case "-plugin":
+                case "-data":
                     // strip quotes and slahes in case of "C:\foobar\"
                     string inputPath = nextArg.Trim().Trim('"').TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                     string fullPath = Path.GetFullPath(inputPath);
                     if (!File.Exists(fullPath) && !Directory.Exists(fullPath)) throw new ArgumentException("Plugin path is invalid");
                     filePath = fullPath;
+                    continue;
+                case "-lomode":
+                    doLoadOrderMode = true;
+                    doSingleMode = false;
+                    continue;
+                case "-singlemode":
+                    doSingleMode = true;
+                    doLoadOrderMode = false;
                     continue;
             }
         }
@@ -84,12 +94,7 @@ class Program
             }
         }
 
-        if (File.Exists(filePath) && allowedExtensions.Contains(Path.GetExtension(filePath)))
-        {
-            Console.WriteLine($"Single plugin mode: {filePath}");
-            modPaths.Add(filePath);
-        }
-        else if (Directory.Exists(filePath))
+        if (Directory.Exists(filePath))
         {
             Console.WriteLine($"Directory mode: {filePath}");
             modPaths = [.. Directory.GetFiles(filePath).Where(file => allowedExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))];
@@ -99,38 +104,95 @@ class Program
             throw new ArgumentException($"Invalid path: {filePath}");
         }
 
-        foreach (string modPath in modPaths)
+        if (doSingleMode)
         {
-            string pluginFile = Path.GetFileName(modPath);
-            Console.WriteLine($"Checking Plugin: {pluginFile}");
+            Console.WriteLine($"Single mode: {filePath}");
 
-            (var mod, var linkCache) = LoadMod(modPath);
-
-            if (mod is null || linkCache is null) continue;
-
-            Export export = new(mod, linkCache);
-            var output = export.BuildOutput();
-            output.name = pluginFile;
-            output.metadata = metadataCache.FirstOrDefault(data => data.pluginFile == pluginFile);
-
-            Console.WriteLine($"Total SS2 Items: {output.totalItems}");
-
-            if (output.totalItems == 0)
+            foreach (string modPath in modPaths)
             {
-                Console.WriteLine("No SS2 items found in this plugin. Skipping json export.");
-                continue;
-            }
+                string pluginFile = Path.GetFileName(modPath);
+                Console.WriteLine($"Checking Plugin: {pluginFile}");
 
-            if (!Directory.Exists(".\\json")) Directory.CreateDirectory(".\\json");
-            var json = JsonConvert.SerializeObject(output);
-            File.WriteAllText($".\\json\\{pluginFile}.json", json);
+                (var mod, var linkCache) = LoadMod(modPath);
+
+                if (mod is null || linkCache is null) continue;
+
+                Export export = new(mod, linkCache);
+                var output = export.BuildOutput();
+                output.name = pluginFile;
+                output.metadata = metadataCache.FirstOrDefault(data => data.pluginFile == pluginFile);
+
+                Console.WriteLine($"Total SS2 Items: {output.totalItems}");
+
+                if (output.totalItems == 0) continue;
+
+                if (!Directory.Exists(".\\json")) Directory.CreateDirectory(".\\json");
+                var json = JsonConvert.SerializeObject(output);
+                File.WriteAllText($".\\json\\{pluginFile}.json", json);
+            }
         }
+
+        if (doLoadOrderMode)
+        {
+            Console.WriteLine($"LO mode: {filePath}");
+
+            var linkCache = LoadMods(filePath, modPaths);
+
+            foreach (string modPath in modPaths)
+            {
+                string pluginDir = Path.GetDirectoryName(modPath) ?? throw new ArgumentException("Invalid plugin path");
+                string pluginFile = Path.GetFileName(modPath) ?? throw new ArgumentException("Invalid plugin path");
+                var activeMod = Fallout4Mod.CreateFromBinaryOverlay(Path.Combine(pluginDir, pluginFile), Fallout4Release.Fallout4);
+                
+                Console.WriteLine($"Checking Plugin: {pluginFile}");
+
+                Export export = new(activeMod, linkCache);
+
+                var output = export.BuildOutput();
+                output.name = pluginFile;
+                output.metadata = metadataCache.FirstOrDefault(data => data.pluginFile == pluginFile);
+
+                Console.WriteLine($"Total SS2 Items: {output.totalItems}");
+
+                if (output.totalItems == 0)
+                {
+                    Console.WriteLine("No SS2 items found in this plugin. Skipping json export.");
+                    continue;
+                }
+
+                if (!Directory.Exists(".\\json")) Directory.CreateDirectory(".\\json");
+                var json = JsonConvert.SerializeObject(output);
+                File.WriteAllText($".\\json\\{pluginFile}.json", json);
+            }
+        }
+        
     }
 
     private static void Log(string message)
     {
         string logPath = "log.txt";
         File.AppendAllText(logPath, $"{DateTime.Now}: {message}" + Environment.NewLine);
+    }
+
+    private static ILinkCache LoadMods(string pluginDir, List<string> plugins)
+    {
+        var listings = new List<LoadOrderListing>();
+        foreach (string plugin in plugins)
+        {
+            listings.Add(new(ModKey.FromFileName(Path.GetFileName(plugin)), enabled: true));
+        }
+        listings = [.. listings.Distinct()];
+
+        var loadOrder = LoadOrder.Import<IFallout4ModGetter>(listings, GameRelease.Fallout4);
+
+        var env = GameEnvironment.Typical.Builder<IFallout4Mod, IFallout4ModGetter>(GameRelease.Fallout4)
+            .WithTargetDataFolder(pluginDir)
+            .WithLoadOrder(loadOrder)
+            .Build();
+
+        ILinkCache linkCache = env.LoadOrder.ToImmutableLinkCache();
+        
+        return linkCache;
     }
 
     private static (IFallout4ModDisposableGetter?, ILinkCache?) LoadMod(string pluginFullpath)
@@ -173,7 +235,7 @@ class Program
         }
         listings.Add(new(ModKey.FromFileName(pluginFile), enabled: true));
 
-        listings = [..listings.Distinct()];
+        listings = [.. listings.Distinct()];
 
         var loadOrder = LoadOrder.Import<IFallout4ModGetter>(listings, GameRelease.Fallout4);
 
