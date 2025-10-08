@@ -308,7 +308,6 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                 if (formListKeyword is null && i == 0)
                 {
                     linkCache.TryResolve<IKeywordGetter>(key.FormKey, out formListKeyword);
-                    if (formListKeyword is not null) Console.WriteLine($"{key.FormKey} : {formListKeyword?.EditorID}");
                 }
                 IndexAddonItem(key.FormKey, formListKeyword);
                 i++;
