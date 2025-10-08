@@ -8,7 +8,7 @@ namespace SS2Scraper;
 
 public partial class Export
 {
-    private void IndexMiscItem(IMiscItemGetter record)
+    private void IndexMiscItem(IMiscItemGetter record, IKeywordGetter? formListKeyword)
     {
         // pet names, doesn't use script
         if (record.HasKeyword(FormKey.Factory("01F43E:SS2.esm"))) IndexBaseItem(record, output.petNames);
@@ -29,11 +29,11 @@ public partial class Export
                     continue;
 
                 case "simsettlementsv2:miscobjects:foundation":
-                    IndexFoundation(record);
+                    IndexFoundation(record, formListKeyword);
                     continue;
 
                 case "simsettlementsv2:miscobjects:powerpole":
-                    IndexPowerPole(record);
+                    IndexPowerPole(record, formListKeyword);
                     continue;
 
                 case "simsettlementsv2:miscobjects:furniturestoreitem":
@@ -50,6 +50,10 @@ public partial class Export
 
                 case "simsettlementsv2:miscobjects:unlockableflag":
                     IndexUnlockableFlag(record);
+                    continue;
+
+                case "simsettlementsv2:miscobjects:unlockable":
+                    IndexUnlockable(record);
                     continue;
 
                 case "simsettlementsv2:weapons:cityplan":
@@ -92,7 +96,7 @@ public partial class Export
         IndexBuildingPlan(weapon, requirements);
     }
 
-    private void IndexFoundation(IMiscItemGetter record)
+    private void IndexFoundation(IMiscItemGetter record, IKeywordGetter? formListKeyword)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:Foundation");
 
@@ -104,6 +108,22 @@ public partial class Export
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
         };
+
+        if (formListKeyword is not null)
+        {
+            switch (formListKeyword.EditorID)
+            {
+                case "SS2_FLID_1x1_Foundations":
+                    foundation.size = 1;
+                    break;
+                case "SS2_FLID_2x2_Foundations":
+                    foundation.size = 2;
+                    break;
+                case "SS2_FLID_3x3_Foundations":
+                    foundation.size = 3;
+                    break;
+            }
+        }
 
         var spawnData = GetScriptProperty(script, "SpawnData") as ScriptStructProperty;
         if (spawnData?.Members.First().Properties.First() is not null)
@@ -118,20 +138,26 @@ public partial class Export
                     foundation.workshopName = activator.Name?.ToString() ?? "";
                     foundation.terraformer = activator.HasKeyword(FormKey.Factory("0193F8:SS2.esm")); // terraformer keyword
                     foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
-                    BoundsSize size = GetSizeFromObjectBounds(activator.ObjectBounds);
-                    if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
-                    else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
-                    else if (size.X >= 256 || size.Y >= 256) foundation.size = 1;
+                    if (foundation.size == 0)
+                    {
+                        BoundsSize size = GetSizeFromObjectBounds(activator.ObjectBounds);
+                        if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
+                        else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
+                        else if (size.X >= 256 || size.Y >= 256) foundation.size = 1;
+                    }
                 }
 
                 if (property1?.Object.FormKey is not null && linkCache.TryResolve<IStaticGetter>(property1.Object.FormKey, out var stat))
                 {
                     foundation.workshopName = stat.Name?.ToString() ?? "";
                     foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == stat.FormKey).Any();
-                    BoundsSize size = GetSizeFromObjectBounds(stat.ObjectBounds);
-                    if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
-                    else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
-                    else if (size.X >= 256 || size.Y >= 256) foundation.size = 1;
+                    if (foundation.size == 0)
+                    {
+                        BoundsSize size = GetSizeFromObjectBounds(stat.ObjectBounds);
+                        if (size.X >= 768 || size.Y >= 768) foundation.size = 3;
+                        else if (size.X >= 512 || size.Y >= 512) foundation.size = 2;
+                        else if (size.X >= 256 || size.Y >= 256) foundation.size = 1;
+                    }
                 }
             }
         }
@@ -140,7 +166,7 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexPowerPole(IMiscItemGetter record)
+    private void IndexPowerPole(IMiscItemGetter record, IKeywordGetter? formListKeyword)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:PowerPole");
 
@@ -152,6 +178,22 @@ public partial class Export
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
         };
+
+        if (formListKeyword is not null)
+        {
+            switch (formListKeyword.EditorID)
+            {
+                case "SS2_FLID_1x1_PowerPoles":
+                    pole.plotSize = 1;
+                    break;
+                case "SS2_FLID_2x2_PowerPoles":
+                    pole.plotSize = 2;
+                    break;
+                case "SS2_FLID_3x3_PowerPoles":
+                    pole.plotSize = 3;
+                    break;
+            }
+        }
 
         var spawnData = GetScriptProperty(script, "SpawnData") as ScriptStructProperty;
         if (spawnData?.Members.First().Properties.First() is not null)
@@ -509,10 +551,23 @@ public partial class Export
     }
 
     private void IndexSettlerLocationDiscovery(IMiscItemGetter record)
-    {      
+    {
         var script = GetScript(record, "simsettlementsv2:miscobjects:settlerlocationdiscovery");
         if (script is null) return;
 
+        IndexRegistrerForms(script);
+    }
+
+    private void IndexUnlockable(IMiscItemGetter record)
+    {
+        var script = GetScript(record, "simsettlementsv2:miscobjects:unlockable");
+        if (script is null) return;
+
+        IndexRegistrerForms(script);
+    }
+
+    private void IndexRegistrerForms(IScriptEntryGetter script)
+    {
         var registerForms = GetScriptProperty(script, "RegisterForms") as ScriptStructListProperty;
         if (registerForms?.Structs.Count > 0)
         {
@@ -522,7 +577,7 @@ public partial class Export
                 {
                     if (member is not null && member.Name == "FormToInject")
                     {
-                        IndexAddonItem(member.Object.FormKey);
+                        IndexAddonItem(member.Object.FormKey, null);
                     }
                 }
             }

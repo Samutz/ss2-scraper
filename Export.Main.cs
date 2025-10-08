@@ -167,6 +167,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         public bool craftable = false;
         public int height = 0;
         public bool hasLight = false;
+        public int plotSize = 0;
     }
 
     public class HQRoom : BaseItem
@@ -229,6 +230,13 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return output;
     }
 
+    private void IndexAddonItems()
+    {
+        List<FormKey?> addonConfigKeys = GetAddonConfigFormKeys();
+        List<FormKey?> addonFormListKeys = GetAddonFormListFormKeys(addonConfigKeys);
+        IndexAddonFormLists(addonFormListKeys);
+    }
+
     private List<FormKey?> GetAddonConfigFormKeys()
     {
         List<FormKey> addonConfigKeys = [];
@@ -251,10 +259,8 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return [.. addonConfigKeys.Distinct()];
     }
 
-    private List<FormKey?> GetAddonFormListFormKeys()
+    private List<FormKey?> GetAddonFormListFormKeys(List<FormKey?> addonConfigKeys)
     {
-        var addonConfigKeys = GetAddonConfigFormKeys();
-
         List<FormKey> formListKeys = [];
 
         foreach (var formKey in addonConfigKeys)
@@ -263,8 +269,6 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                 formKey is null
                 || !linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem)
             ) continue;
-
-            // Console.WriteLine($"Found AddonConfig: {miscItem.EditorID}");
 
             var script = GetScript(miscItem, "SimSettlementsV2:MiscObjects:AddonPackConfiguration");
             if (script is not null)
@@ -279,10 +283,8 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         return [.. formListKeys.Distinct()];
     }
 
-    private List<FormKey?> GetAddonItemFormKeys()
+    private void IndexAddonFormLists(List<FormKey?> formListKeys)
     {
-        var formListKeys = GetAddonFormListFormKeys();
-
         List<FormKey?> addonItemKeys = [];
 
         foreach (var formKey in formListKeys)
@@ -292,36 +294,29 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                 || !linkCache.TryResolve<IFormListGetter>(formKey.Value, out var formList)
             ) continue;
 
-            // Console.WriteLine($"Found AddonItem FormList: {formList.EditorID} with {formList.Items.Count} items");
-
             if (
                 formList is null
                 || formList.Items is null
                 || formList.Items.Count == 0
             ) continue;
 
+            IKeywordGetter? formListKeyword = null;
+            int i = 0;
             foreach (var key in formList.Items)
             {
                 if (key is null) continue;
-                addonItemKeys.Add(key.FormKey);
+                if (formListKeyword is null && i == 0)
+                {
+                    linkCache.TryResolve<IKeywordGetter>(key.FormKey, out formListKeyword);
+                    if (formListKeyword is not null) Console.WriteLine($"{key.FormKey} : {formListKeyword?.EditorID}");
+                }
+                IndexAddonItem(key.FormKey, formListKeyword);
+                i++;
             }
         }
-
-        return [.. addonItemKeys.Distinct()];
     }
 
-    private void IndexAddonItems()
-    {
-        var itemKeys = GetAddonItemFormKeys();
-
-        foreach (var formKey in itemKeys)
-        {
-            if (formKey is null) continue;
-            IndexAddonItem(formKey);
-        }
-    }
-
-    private void IndexAddonItem(FormKey? formKey)
+    private void IndexAddonItem(FormKey? formKey, IKeywordGetter? formListKeyword)
     {
         if (formKey is null) return;
         if (linkCache.TryResolve<IKeywordGetter>(formKey.Value, out var keyword)) return; // skip keywords
@@ -334,7 +329,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
 
         if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem))
         {
-            IndexMiscItem(miscItem);
+            IndexMiscItem(miscItem, formListKeyword);
             return;
         }
 
@@ -388,7 +383,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             {
                 if (linkCache.TryResolve<IMiscItemGetter>(item.FormKey, out var miscItem))
                 {
-                    IndexMiscItem(miscItem);
+                    IndexMiscItem(miscItem, null);
                     continue;
                 }
             }
@@ -398,7 +393,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         {
             if (linkCache.TryResolve<IMiscItemGetter>(FormKey.Factory(listKey), out var miscItem))
             {
-                IndexMiscItem(miscItem);
+                IndexMiscItem(miscItem, null);
                 continue;
             }
         }
