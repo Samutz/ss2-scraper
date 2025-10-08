@@ -89,6 +89,8 @@ public partial class Export
             }
         }
 
+        buildingPlan.requirements ??= GetUnlockableRequirements(script);
+
         output.buildingPlans.Add(buildingPlan);
         output.totalItems++;
     }
