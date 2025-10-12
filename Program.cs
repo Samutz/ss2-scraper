@@ -17,8 +17,8 @@ class Program
     {
         string? filePath = null;
         bool doMO2 = false;
-        bool doLoadOrderMode = false;
-        bool doSingleMode = true;
+        bool doLoadOrderMode = true;
+        bool doSingleMode = false;
         string modListPath = "";
         List<Export.ModMetadata> metadataCache = [];
 
