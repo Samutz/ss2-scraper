@@ -1,3 +1,4 @@
+using System.Net;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -7,10 +8,11 @@ using Noggog;
 
 namespace SS2Scraper;
 
-public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache)
+public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCache, bool bOutputUnknowns)
 {
     private readonly IFallout4ModDisposableGetter mod = mod;
     private readonly ILinkCache linkCache = linkCache;
+    private readonly bool bOutputUnknowns = bOutputUnknowns;
 
     public class ModMetadata
     {
@@ -326,40 +328,47 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
 
     private void IndexAddonItem(FormKey? formKey, IKeywordGetter? formListKeyword)
     {
+        if (formListKeyword?.EditorID == "SS2_FLID_TerritoryTraits") return;
+        
         if (formKey is null) return;
-        if (linkCache.TryResolve<IKeywordGetter>(formKey.Value, out var keyword)) return; // skip keywords
-        if (linkCache.TryResolve<IStaticCollectionGetter>(formKey.Value, out var scol)) return; // skip SCOLs
-        if (linkCache.TryResolve<IStaticGetter>(formKey.Value, out var staticObj)) return; // skip statics
-        if (linkCache.TryResolve<IPlacedObjectGetter>(formKey.Value, out var objRef)) return; // skip objectrefs
-        if (linkCache.TryResolve<IGlobalGetter>(formKey.Value, out var globalVar)) return; // skip globals
-        if (linkCache.TryResolve<IQuestGetter>(formKey.Value, out var quest)) return;
-        if (linkCache.TryResolve<IActivatorGetter>(formKey.Value, out var activator)) return;
 
-        if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem))
+        linkCache.TryResolve<IMajorRecordGetter>(formKey.Value, out var record);
+        if (record is null) return;
+
+        switch (record.Type.ToString().Split(".").Last())
         {
-            IndexMiscItem(miscItem, formListKeyword);
-            return;
-        }
+            case "IKeyword":
+                if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var keyword))
+                {
+                    if (keyword != formListKeyword) 
+                        Console.WriteLine($"Found UNKNOWN {record.Type.ToString().Split(".").Last()}: {formKey} | KYWD: {formListKeyword?.EditorID}");;
+                }
+                break;
 
-        if (linkCache.TryResolve<IWeaponGetter>(formKey.Value, out var weapon))
-        {
-            IndexWeapon(weapon);
-            return;
-        }
+            case "IMiscItem":
+                if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem))
+                    IndexMiscItem(miscItem, formListKeyword);
+                break;
 
-        if (linkCache.TryResolve<IArmorGetter>(formKey.Value, out var armor))
-        {
-            IndexArmor(armor);
-            return;
-        }
+            case "IWeapon":
+                if (linkCache.TryResolve<IWeaponGetter>(formKey.Value, out var weapon))
+                    IndexWeapon(weapon);
+                break;
 
-        if (linkCache.TryResolve<IBookGetter>(formKey.Value, out var book))
-        {
-            IndexBook(book);
-            return;
-        }
+            case "IArmor":
+                if (linkCache.TryResolve<IArmorGetter>(formKey.Value, out var armor))
+                    IndexArmor(armor);
+                break;
 
-        Console.WriteLine($"Found UNKNOWN AddonItem: {formKey}");
+            case "IBook":
+                if (linkCache.TryResolve<IBookGetter>(formKey.Value, out var book))
+                    IndexBook(book);
+                break;
+
+            default:
+                if (bOutputUnknowns) Console.WriteLine($"Found UNKNOWN {record.Type.ToString().Split(".").Last()}: {formKey} | KYWD: {formListKeyword?.EditorID}");
+                break;
+        }
     }
 
     // SS2 CH2 doesn't register its own HQ items in its addon config

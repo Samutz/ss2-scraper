@@ -22,7 +22,9 @@ public partial class Export
                     IndexBeerRecipe(record);
                     continue;
 
-                default: continue;
+                default:
+                    if (bOutputUnknowns) Console.WriteLine($"Found UNKNOWN book script: {script.Name.ToLower()} on {record.FormKey} ({record.EditorID})");
+                    continue;
             }
         }
     }

@@ -19,6 +19,7 @@ class Program
         bool doMO2 = false;
         bool doLoadOrderMode = true;
         bool doSingleMode = false;
+        bool doUnknowns = false;
         string modListPath = "";
         List<Export.ModMetadata> metadataCache = [];
 
@@ -47,6 +48,9 @@ class Program
                 case "-singlemode":
                     doSingleMode = true;
                     doLoadOrderMode = false;
+                    continue;
+                case "-unknowns":
+                    doUnknowns = true;
                     continue;
             }
         }
@@ -117,7 +121,7 @@ class Program
 
                 if (mod is null || linkCache is null) continue;
 
-                Export export = new(mod, linkCache);
+                Export export = new(mod, linkCache, doUnknowns);
                 var output = export.BuildOutput();
                 output.name = pluginFile;
                 output.metadata = metadataCache.FirstOrDefault(data => data.pluginFile == pluginFile);
@@ -146,7 +150,7 @@ class Program
                 
                 Console.WriteLine($"Checking Plugin: {pluginFile}");
 
-                Export export = new(activeMod, linkCache);
+                Export export = new(activeMod, linkCache, doUnknowns);
 
                 var output = export.BuildOutput();
                 output.name = pluginFile;

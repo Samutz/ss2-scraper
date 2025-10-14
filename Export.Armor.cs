@@ -21,7 +21,9 @@ public partial class Export
                     IndexDynamicFlag(record, new());
                     continue;
 
-                default: continue;
+                default:
+                    if (bOutputUnknowns) Console.WriteLine($"Found UNKNOWN armor script: {script.Name.ToLower()} on {record.FormKey} ({record.EditorID})");
+                    continue;
             }
         }
     }

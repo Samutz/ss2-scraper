@@ -76,7 +76,9 @@ public partial class Export
                     IndexSettlerLocationDiscovery(record);
                     continue;
 
-                default: continue;
+                default:
+                    if (bOutputUnknowns) Console.WriteLine($"Found UNKNOWN miscitem script: {script.Name.ToLower()} on {record.FormKey} ({record.EditorID})");
+                    continue;
             }
         }
     }

@@ -31,7 +31,9 @@ public partial class Export
                     IndexLeaderCard(record);
                     continue;
 
-                default: continue;
+                default:
+                    if (bOutputUnknowns) Console.WriteLine($"Found UNKNOWN weapon script: {script.Name.ToLower()} on {record.FormKey} ({record.EditorID})");
+                    continue;
             }
         }
     }
