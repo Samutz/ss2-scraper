@@ -7,7 +7,7 @@ I am inexperienced with C#/.net, so don't be surprised if my code looks stupid.
 For the time being I'm not providing the compiled binary as I'm still constantly updating the tool to add more functions. When it reaches a point that I'm not updating as frequently, I might start posting it in the releases section.
 
 # Output
-Collected data is written to JSON files in a json subfolder. One JSON folder per plugin.
+Collected data is written to JSON files in a json subfolder. One JSON file per plugin file.
 
 # Parameters
 `-data <data-path>`  
