@@ -48,19 +48,6 @@ public partial class Export
             name = record.Name?.ToString() ?? ""
         };
 
-        // keywords
-        if (record.Keywords is not null && record.Keywords.Count > 0)
-        {
-            foreach (var keyword in record.Keywords)
-            {
-                if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
-                if (keywordKey.EditorID?.StartsWith("SS2_PlotType_") ?? false) buildingPlan.type = keywordKey.EditorID[13..];
-                if (keywordKey.EditorID?.StartsWith("SS2_PlotTypeSubClass_") ?? false) buildingPlan.typeSubClass = keywordKey.EditorID[21..];
-                if (keywordKey.EditorID?.StartsWith("SS2_PlotSize_") ?? false) buildingPlan.size = keywordKey.EditorID[13..];
-                if (keywordKey.EditorID?.StartsWith("SS2_ThemeTag_") ?? false) buildingPlan.tags.Add(keywordKey.EditorID[13..]);
-            }
-        }
-
         // script properties
         var script = GetScript(record, "SimSettlementsV2:Weapons:BuildingPlan");
         if (script is null) return;
@@ -88,6 +75,29 @@ public partial class Export
                     buildingPlan.maxLevel = (levelPlan.level > buildingPlan.maxLevel) ? levelPlan.level : buildingPlan.maxLevel;
                     buildingPlan.levelPlans.Add(levelPlan);
                 }
+            }
+        }
+
+        var typeSubClassKeyword = (GetScriptProperty(script, "ClassKeyword") as ScriptObjectProperty)?.Object.FormKey;
+        if (typeSubClassKeyword is not null && linkCache.TryResolve<IKeywordGetter>(typeSubClassKeyword.Value, out var classKeyword))
+        {
+            if (classKeyword.EditorID?.StartsWith("SS2_PlotTypeSubClass_") ?? false)
+            {
+                buildingPlan.typeSubClass = classKeyword.EditorID[21..];
+                buildingPlan.type = buildingPlan.typeSubClass.Split('_')[0];
+            }
+        }
+
+        // keywords
+        if (record.Keywords is not null && record.Keywords.Count > 0)
+        {
+            foreach (var keyword in record.Keywords)
+            {
+                if (!linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var keywordKey)) continue;
+                if (buildingPlan.type.IsNullOrEmpty() && (keywordKey.EditorID?.StartsWith("SS2_PlotType_") ?? false)) buildingPlan.type = keywordKey.EditorID[13..];
+                if (buildingPlan.typeSubClass.IsNullOrEmpty() && (keywordKey.EditorID?.StartsWith("SS2_PlotTypeSubClass_") ?? false)) buildingPlan.typeSubClass = keywordKey.EditorID[21..];
+                if (keywordKey.EditorID?.StartsWith("SS2_PlotSize_") ?? false) buildingPlan.size = keywordKey.EditorID[13..];
+                if (keywordKey.EditorID?.StartsWith("SS2_ThemeTag_") ?? false) buildingPlan.tags.Add(keywordKey.EditorID[13..]);
             }
         }
 
