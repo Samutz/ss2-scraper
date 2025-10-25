@@ -236,6 +236,10 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                 IndexAddonItem(FormKey.Factory("000BC6:IDEKsLogisticsStation2.esl"), null);
                 IndexAddonItem(FormKey.Factory("000BCC:IDEKsLogisticsStation2.esl"), null);
                 break;
+
+            case "SS2_XPAC_Chapter3.esm":
+                IndexAddonItem(FormKey.Factory("0270EC:SS2_XPAC_Chapter3.esm"), null); // helios tower marvel
+                break;
         }
 
         return output;
