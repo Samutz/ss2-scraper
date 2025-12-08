@@ -41,55 +41,6 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                 IndexAddonItem(FormKey.Factory("0270EC:SS2_XPAC_Chapter3.esm"), null); // helios tower marvel
                 break;
         }
-
-        List<string> skipKeywordNames = [
-            "LocTypeWorkshopSettlement",
-            "LocTypeWorld",
-            "LocEncGunners",
-            "LocTypeBar",
-            "LocSetBrewery",
-            "LocSetHospital",
-            "LocSetMilitary",
-            "LocSetNatural",
-            "LocSetQuarry",
-            "LocSetSkyscraper",
-            "LocEncBrotherhoodOfSteel",
-            "LocEncBugs",
-            "LocEncChildrenOfAtom",
-            "LocEncGhouls",
-            "LocEncMirelurks",
-            "LocEncRaiders",
-            "LocEncRobots",
-            "LocEncSuperMutants",
-            "LocEncSynths",
-            "LocEncWildlife",
-        ];
-
-        List<string> keywordsMissingTraits = [];
-
-        foreach (var location in mod.Locations)
-        {
-            if (location is null || location.Name is null || location.Name.ToString().IsNullOrEmpty()) continue;
-            if (location.Keywords is null) continue;
-            bool skip = false;
-            List<string> validKeywords = [];
-            foreach (var keyword in location.Keywords)
-            {
-                linkCache.TryResolve<IKeywordGetter>(keyword.FormKey, out var outKeyword);
-                if (outKeyword is null) continue;
-                if (outKeyword.EditorID is null) continue;
-                if (skipKeywordNames.Contains(outKeyword.EditorID))
-                {
-                    skip = true;
-                    continue;
-                }
-                validKeywords.Add(outKeyword.EditorID);
-            }
-            if (skip) continue;
-            keywordsMissingTraits.Add($"Location: {location.Name} ({location.EditorID}) | Keywords: {String.Join(", ", validKeywords)}");
-        }
-
-        foreach (var name in keywordsMissingTraits.Distinct()) Console.WriteLine($"{name}");
              
         return output;
     }
