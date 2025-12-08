@@ -40,14 +40,14 @@ public partial class Export
         var script = GetScript(record, "SimSettlementsV2:Armors:ThemeDefinition_Flags");
         if (script is null) return;
         
-        flag.hasFlagWaving = GetScriptProperty(script, "FlagWaving") as ScriptObjectProperty is not null;
-        flag.hasFlagDown = GetScriptProperty(script, "FlagDown") as ScriptObjectProperty is not null;
-        flag.hasFlagWall = GetScriptProperty(script, "FlagWall") as ScriptObjectProperty is not null;
-        flag.hasFlagHalfCircleFlag01 = GetScriptProperty(script, "FlagHalfCircleFlag01") as ScriptObjectProperty is not null;
-        flag.hasFlagHalfCircleFlag02 = GetScriptProperty(script, "FlagHalfCircleFlag02") as ScriptObjectProperty is not null;
-        flag.hasFlagBannerTownStatic = GetScriptProperty(script, "FlagBannerTownStatic") as ScriptObjectProperty is not null;
-        flag.hasFlagBannerTownTorn = GetScriptProperty(script, "FlagBannerTownTorn") as ScriptObjectProperty is not null;
-        flag.hasFlagBannerTownTornWaving = GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty is not null;
+        flag.FlagWaving = (GetScriptProperty(script, "FlagWaving") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+        flag.FlagDown = (GetScriptProperty(script, "FlagDown") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+        flag.FlagWall = (GetScriptProperty(script, "FlagWall") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+        flag.FlagHalfCircleFlag01 = (GetScriptProperty(script, "FlagHalfCircleFlag01") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+        flag.FlagHalfCircleFlag02 = (GetScriptProperty(script, "FlagHalfCircleFlag02") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+        flag.FlagBannerTownStatic = (GetScriptProperty(script, "FlagBannerTownStatic") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+        flag.FlagBannerTownTorn = (GetScriptProperty(script, "FlagBannerTownTorn") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+        flag.FlagBannerTownTornWaving = (GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
         
         output.dynamicFlags.Add(flag);
         output.totalItems++;

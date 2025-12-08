@@ -101,14 +101,14 @@ public partial class Export
     public class DynamicFlag : BaseItem
     {
         public UnlockableRequirements? requirements;
-        public bool hasFlagWaving = false;
-        public bool hasFlagDown = false;
-        public bool hasFlagWall = false;
-        public bool hasFlagHalfCircleFlag01 = false;
-        public bool hasFlagHalfCircleFlag02 = false;
-        public bool hasFlagBannerTownStatic = false;
-        public bool hasFlagBannerTownTorn = false;
-        public bool hasFlagBannerTownTornWaving = false;
+        public string FlagWaving = "";
+        public string FlagDown = "";
+        public string FlagWall = "";
+        public string FlagHalfCircleFlag01 = "";
+        public string FlagHalfCircleFlag02 = "";
+        public string FlagBannerTownStatic = "";
+        public string FlagBannerTownTorn = "";
+        public string FlagBannerTownTornWaving = "";
     }
 
     public class CityPlan : BaseItem
