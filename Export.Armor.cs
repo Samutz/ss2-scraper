@@ -21,6 +21,10 @@ public partial class Export
                     IndexDynamicFlag(record, new());
                     continue;
 
+                case "simsettlementsv2:armors:npcunittype":
+                    IndexUnitType(record, new());
+                    continue;
+
                 default:
                     if (bOutputUnknowns) Console.WriteLine($"Found UNKNOWN armor script: {script.Name.ToLower()} on {record.FormKey} ({record.EditorID})");
                     continue;
@@ -50,6 +54,68 @@ public partial class Export
         flag.FlagBannerTownTornWaving = (GetScriptProperty(script, "FlagBannerTownTornWaving") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
         
         output.dynamicFlags.Add(flag);
+        output.totalItems++;
+    }
+
+    private void IndexUnitType(IArmorGetter record, UnlockableRequirements requirements)
+    {
+        UnitType unitType = new()
+        {
+            formKey = record.FormKey.ToString(),
+            editorId = record.EditorID?.ToString() ?? "",
+            name = record.Name?.ToString() ?? "",
+            requirements = requirements
+        };  
+
+        var script = GetScript(record, "SimSettlementsV2:Armors:NPCUnitType");
+        if (script is null) return;
+
+        unitType.strengthRating = (GetScriptProperty(script, "iStrengthRating") as ScriptIntProperty)?.Data ?? 1;
+        unitType.defaultOutfit = (GetScriptProperty(script, "DefaultOutfit") as ScriptObjectProperty)?.Object.FormKey.ToString() ?? "";
+
+        var descFormKey = (GetScriptProperty(script, "DescriptionMessage") as ScriptObjectProperty)?.Object.FormKey;
+        if (descFormKey is not null && linkCache.TryResolve<IMessageGetter>(descFormKey.Value, out var mesg))
+        {
+            unitType.description = mesg.Description?.ToString() ?? "";
+        }
+
+        var shortDescFormKey = (GetScriptProperty(script, "ShortDescriptionHolder") as ScriptObjectProperty)?.Object.FormKey;
+        if (shortDescFormKey is not null && linkCache.TryResolve<IMiscItemGetter>(shortDescFormKey.Value, out var mesg2))
+        {
+            unitType.shortDescription = mesg2.Name?.ToString() ?? "";
+        }
+
+        List<string> rankNames = [];
+        var ranks = (GetScriptProperty(script, "Ranks") as ScriptObjectListProperty)?.Objects ?? [];
+        foreach (var rank in ranks)
+        {
+            string rankName = "";
+            if (linkCache.TryResolve<IArmorGetter>(rank.Object.FormKey, out var armo1)) rankName = armo1.Name?.ToString() ?? "";
+            rankNames.Add(rankName);
+        }
+
+        var loadouts = (GetScriptProperty(script, "RankLoadOuts") as ScriptObjectListProperty)?.Objects ?? [];
+        int i = 0;
+        foreach (var loadout in loadouts)
+        {
+            if (linkCache.TryResolve<IArmorGetter>(loadout.Object.FormKey, out var armo2))
+            {
+                var loadoutScript = GetScript(armo2, "SimSettlementsV2:Armors:NPCLoadout");
+                if (loadoutScript is null) continue;
+
+                unitType.ranks.Add(new()
+                {
+                    name = armo2.Name?.ToString() ?? "",
+                    formKey = armo2.FormKey.ToString(),
+                    editorId = armo2.EditorID?.ToString() ?? "",
+                    rankName = (i >= 0 && i < rankNames.Count) ? rankNames[i] : "",
+                    rank = (GetScriptProperty(loadoutScript, "iRankRequirement") as ScriptIntProperty)?.Data ?? 1
+                });
+            }
+            i++;
+        }
+
+        output.unitTypes.Add(unitType);
         output.totalItems++;
     }
 }

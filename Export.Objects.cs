@@ -32,6 +32,7 @@ public partial class Export
         public List<WorldRepopulationCell> worldRepopCells = [];
         public List<HQRoom> hqRooms = [];
         public List<BaseItem> petNames = [];
+        public List<UnitType> unitTypes = [];
     }
 
     public class BaseItem
@@ -181,6 +182,22 @@ public partial class Export
         public string recipeName = "";
         public string mash = "";
         public List<string> flavorings = [];
+    }
+
+    public class UnitType : BaseItem
+    {
+        public int strengthRating = 1;
+        public List<UnitRank> ranks = [];
+        public UnlockableRequirements? requirements;
+        public string shortDescription = "";
+        public string defaultOutfit = "";
+
+    }
+
+    public class UnitRank : BaseItem
+    {
+        public int rank = 0;
+        public string rankName = "";
     }
 
     public class BoundsSize
