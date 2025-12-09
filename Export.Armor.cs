@@ -87,15 +87,22 @@ public partial class Export
 
         List<string> rankNames = [];
         var ranks = (GetScriptProperty(script, "Ranks") as ScriptObjectListProperty)?.Objects ?? [];
+        int i = 0;
         foreach (var rank in ranks)
         {
-            string rankName = "";
-            if (linkCache.TryResolve<IArmorGetter>(rank.Object.FormKey, out var armo1)) rankName = armo1.Name?.ToString() ?? "";
-            rankNames.Add(rankName);
+            if (!linkCache.TryResolve<IArmorGetter>(rank.Object.FormKey, out var armo1)) continue;
+            unitType.ranks.Add(new()
+            {
+                name = armo1.Name?.ToString() ?? "",
+                formKey = armo1.FormKey.ToString(),
+                editorId = armo1.EditorID?.ToString() ?? "",
+                rank = i+1
+            });
+            i++;
         }
 
         var loadouts = (GetScriptProperty(script, "RankLoadOuts") as ScriptObjectListProperty)?.Objects ?? [];
-        int i = 0;
+        i = 0;
         foreach (var loadout in loadouts)
         {
             if (linkCache.TryResolve<IArmorGetter>(loadout.Object.FormKey, out var armo2))
@@ -103,13 +110,12 @@ public partial class Export
                 var loadoutScript = GetScript(armo2, "SimSettlementsV2:Armors:NPCLoadout");
                 if (loadoutScript is null) continue;
 
-                unitType.ranks.Add(new()
+                unitType.loadouts.Add(new()
                 {
                     name = armo2.Name?.ToString() ?? "",
                     formKey = armo2.FormKey.ToString(),
                     editorId = armo2.EditorID?.ToString() ?? "",
-                    rankName = (i >= 0 && i < rankNames.Count) ? rankNames[i] : "",
-                    rank = (GetScriptProperty(loadoutScript, "iRankRequirement") as ScriptIntProperty)?.Data ?? 1
+                    requiredRank = (GetScriptProperty(loadoutScript, "iRankRequirement") as ScriptIntProperty)?.Data ?? 1
                 });
             }
             i++;

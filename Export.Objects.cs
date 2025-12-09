@@ -187,17 +187,22 @@ public partial class Export
     public class UnitType : BaseItem
     {
         public int strengthRating = 1;
-        public List<UnitRank> ranks = [];
         public UnlockableRequirements? requirements;
         public string shortDescription = "";
         public string defaultOutfit = "";
+        public List<UnitRank> ranks = [];
+        public List<UnitLoadout> loadouts = [];
 
     }
 
     public class UnitRank : BaseItem
     {
         public int rank = 0;
-        public string rankName = "";
+    }
+
+    public class UnitLoadout : BaseItem
+    {
+        public int requiredRank = 0;
     }
 
     public class BoundsSize
