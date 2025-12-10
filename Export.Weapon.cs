@@ -69,11 +69,41 @@ public partial class Export
             {
                 if (!linkCache.TryResolve<IWeaponGetter>(item.FormKey, out var levelPlanWeapon)) continue;
                 var levelPlan = IndexBuildingLevelPlan(levelPlanWeapon);
-                if (levelPlan is not null)
+                if (levelPlan is null) continue;
+                
+                buildingPlan.maxOccupants = (levelPlan.maxOccupants > buildingPlan.maxOccupants) ? levelPlan.maxOccupants : buildingPlan.maxOccupants;
+                buildingPlan.maxLevel = (levelPlan.level > buildingPlan.maxLevel) ? levelPlan.level : buildingPlan.maxLevel;
+                buildingPlan.levelPlans.Add(levelPlan);
+
+                // find vendor containers
+                var levelPlanScript = GetScript(levelPlanWeapon, "SimSettlementsV2:Weapons:BuildingLevelPlan");
+                if (levelPlanScript is null) continue;
+
+                var stageItems = (GetScriptProperty(levelPlanScript, "StageItemSpawns") as ScriptStructListProperty)?.Structs ?? [];
+                foreach (var stageItem in stageItems)
                 {
-                    buildingPlan.maxOccupants = (levelPlan.maxOccupants > buildingPlan.maxOccupants) ? levelPlan.maxOccupants : buildingPlan.maxOccupants;
-                    buildingPlan.maxLevel = (levelPlan.level > buildingPlan.maxLevel) ? levelPlan.level : buildingPlan.maxLevel;
-                    buildingPlan.levelPlans.Add(levelPlan);
+                    var stageItemObj = (stageItem.Members.FirstOrDefault(c => c.Name == "StageItemDetails") as ScriptObjectProperty)?.Object;
+                    if (stageItemObj is null || !linkCache.TryResolve<IMiscItemGetter>(stageItemObj.FormKey, out var miscItem)) continue;
+
+                    var miscItemScript = GetScript(miscItem, "SimSettlementsV2:MiscObjects:StageItem");
+                    if (miscItemScript is null) continue;
+
+                    var spawn = GetScriptProperty(miscItemScript, "SpawnDetails") as ScriptStructProperty;
+                    var spawnObj = spawn?.Members.FirstOrDefault()?.Properties.FirstOrDefault(c => c.Name == "ObjectForm") as ScriptObjectProperty;
+
+                    if (spawnObj is null || !linkCache.TryResolve<IFurnitureGetter>(spawnObj.Object.FormKey, out var furnItem)) continue;
+
+                    var furnScript = GetScript(furnItem, "workshopobjectscript");
+                    if (furnScript is null) continue;
+                    string vendorString = "";
+                    var furnVendorTypeInt = GetScriptProperty(furnScript, "VendorType") as ScriptIntProperty;
+                    var furnVendorTypeString = GetScriptProperty(furnScript, "sCustomVendorID") as ScriptStringProperty;
+
+                    if (furnVendorTypeInt is not null && furnVendorTypeInt.Data > -1) vendorString = furnVendorTypeInt.Data.ToString();
+                    else if (furnVendorTypeString is not null && !furnVendorTypeString.Data.IsNullOrEmpty()) vendorString = furnVendorTypeString.Data;
+                    else continue;
+
+                    if (!buildingPlan.vendorTypes.Contains(vendorString)) buildingPlan.vendorTypes.Add(vendorString);
                 }
             }
         }
@@ -98,6 +128,17 @@ public partial class Export
                 if (buildingPlan.typeSubClass.IsNullOrEmpty() && (keywordKey.EditorID?.StartsWith("SS2_PlotTypeSubClass_") ?? false)) buildingPlan.typeSubClass = keywordKey.EditorID[21..];
                 if (keywordKey.EditorID?.StartsWith("SS2_PlotSize_") ?? false) buildingPlan.size = keywordKey.EditorID[13..];
                 if (keywordKey.EditorID?.StartsWith("SS2_ThemeTag_") ?? false) buildingPlan.tags.Add(keywordKey.EditorID[13..]);
+            }
+        }
+
+        // production for vendors
+        var producedItems = (GetScriptProperty(script, "ProducedItems") as ScriptStructListProperty)?.Structs ?? [];
+        foreach (var itemStructs in producedItems)
+        {
+            string vendorString = (itemStructs.Members.FirstOrDefault(c => c.Name == "sTargetVendorType") as ScriptStringProperty)?.Data ?? "";
+            if (!vendorString.IsNullOrEmpty() && !buildingPlan.vendorTargets.Contains(vendorString))
+            {
+                buildingPlan.vendorTargets.Add(vendorString);
             }
         }
 

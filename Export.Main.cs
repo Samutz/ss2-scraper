@@ -392,4 +392,14 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         }
         return null;
     }
+    private static IScriptEntryGetter? GetScript(IFurnitureGetter record, string scriptName)
+    {
+        if (record.VirtualMachineAdapter is null || record.VirtualMachineAdapter.Scripts.Count == 0) return null;
+        foreach (var script in record.VirtualMachineAdapter.Scripts)
+        {
+            if (script is null || !script.Name.Equals(scriptName, StringComparison.CurrentCultureIgnoreCase)) continue;
+            return script;
+        }
+        return null;
+    }
 }

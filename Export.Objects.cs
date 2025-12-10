@@ -56,7 +56,10 @@ public partial class Export
         public int maxOccupants = 1;
         public bool isMarvel = false;
         public bool isBranching = false;
+        public List<String> vendorTargets = [];
+        public List<String> vendorTypes = [];
     }
+
 
     public class UnlockableRequirements
     {
