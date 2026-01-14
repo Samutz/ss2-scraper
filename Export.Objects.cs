@@ -41,11 +41,11 @@ public partial class Export
         public string editorId = "";
         public string name = "";
         public string description = "";
+        public UnlockableRequirements? requirements = null;
     }
 
     public class BuildingPlan : BaseItem
     {
-        public UnlockableRequirements? requirements;
         public bool isPlayerSelectOnly = false;
         public string type = "";
         public string typeSubClass = "";
@@ -104,7 +104,6 @@ public partial class Export
 
     public class DynamicFlag : BaseItem
     {
-        public UnlockableRequirements? requirements;
         public string FlagWaving = "";
         public string FlagDown = "";
         public string FlagWall = "";
@@ -190,7 +189,6 @@ public partial class Export
     public class UnitType : BaseItem
     {
         public int strengthRating = 1;
-        public UnlockableRequirements? requirements;
         public string shortDescription = "";
         public string defaultOutfit = "";
         public List<UnitRank> ranks = [];

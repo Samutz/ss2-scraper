@@ -33,12 +33,12 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         {
             case "IDEKsLogisticsStation2.esl":
                 // BPs injected by ILS2's custom quest
-                IndexAddonItem(FormKey.Factory("000BC6:IDEKsLogisticsStation2.esl"), null);
-                IndexAddonItem(FormKey.Factory("000BCC:IDEKsLogisticsStation2.esl"), null);
+                IndexAddonItem(FormKey.Factory("000BC6:IDEKsLogisticsStation2.esl"));
+                IndexAddonItem(FormKey.Factory("000BCC:IDEKsLogisticsStation2.esl"));
                 break;
 
             case "SS2_XPAC_Chapter3.esm":
-                IndexAddonItem(FormKey.Factory("0270EC:SS2_XPAC_Chapter3.esm"), null); // helios tower marvel
+                IndexAddonItem(FormKey.Factory("0270EC:SS2_XPAC_Chapter3.esm")); // helios tower marvel
                 break;
         }
              
@@ -124,13 +124,13 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
                 {
                     linkCache.TryResolve<IKeywordGetter>(key.FormKey, out formListKeyword);
                 }
-                IndexAddonItem(key.FormKey, formListKeyword);
+                IndexAddonItem(key.FormKey, formListKeyword, null);
                 i++;
             }
         }
     }
 
-    private void IndexAddonItem(FormKey? formKey, IKeywordGetter? formListKeyword)
+    private void IndexAddonItem(FormKey? formKey, IKeywordGetter? formListKeyword = null, UnlockableRequirements? requirements = null)
     {
         if (formListKeyword?.EditorID == "SS2_FLID_TerritoryTraits") return;
         
@@ -151,22 +151,22 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
 
             case "IMiscItem":
                 if (linkCache.TryResolve<IMiscItemGetter>(formKey.Value, out var miscItem))
-                    IndexMiscItem(miscItem, formListKeyword);
+                    IndexMiscItem(miscItem, formListKeyword, requirements);
                 break;
 
             case "IWeapon":
                 if (linkCache.TryResolve<IWeaponGetter>(formKey.Value, out var weapon))
-                    IndexWeapon(weapon);
+                    IndexWeapon(weapon, requirements);
                 break;
 
             case "IArmor":
                 if (linkCache.TryResolve<IArmorGetter>(formKey.Value, out var armor))
-                    IndexArmor(armor);
+                    IndexArmor(armor, requirements);
                 break;
 
             case "IBook":
                 if (linkCache.TryResolve<IBookGetter>(formKey.Value, out var book))
-                    IndexBook(book);
+                    IndexBook(book, requirements);
                 break;
 
             default:
@@ -204,7 +204,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             {
                 if (linkCache.TryResolve<IMiscItemGetter>(item.FormKey, out var miscItem))
                 {
-                    IndexMiscItem(miscItem, null);
+                    IndexMiscItem(miscItem);
                     continue;
                 }
             }
@@ -214,7 +214,7 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         {
             if (linkCache.TryResolve<IMiscItemGetter>(FormKey.Factory(listKey), out var miscItem))
             {
-                IndexMiscItem(miscItem, null);
+                IndexMiscItem(miscItem);
                 continue;
             }
         }
