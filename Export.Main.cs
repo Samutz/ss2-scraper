@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Mutagen.Bethesda.Fallout4;
 using Mutagen.Bethesda.Plugins;
 using Mutagen.Bethesda.Plugins.Cache;
@@ -15,6 +16,8 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
 
     public Output output = new();
 
+    private List<IConstructibleObjectGetter> allConstructibleObjects = [];
+
     public Output BuildOutput()
     {
         TranslatedString.DefaultLanguage = Language.English;
@@ -25,6 +28,13 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             isLight = mod.IsSmallMaster,
             masters = [.. mod.MasterReferences.Select(master => master.Master.FileName.String)],
         };
+
+        foreach (IFallout4ModDisposableGetter cacheMod in linkCache.PriorityOrder.Cast<IFallout4ModDisposableGetter>())
+        {
+            if (cacheMod is null) continue;
+            foreach (var cobj in cacheMod.ConstructibleObjects)
+                allConstructibleObjects.Add(cobj);
+        }
 
         IndexAddonItems();
         IndexHQActionLists();

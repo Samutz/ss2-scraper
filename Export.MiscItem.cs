@@ -139,7 +139,7 @@ public partial class Export
                 {
                     foundation.workshopName = activator.Name?.ToString() ?? "";
                     foundation.terraformer = activator.HasKeyword(FormKey.Factory("0193F8:SS2.esm")); // terraformer keyword
-                    foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
+                    foundation.craftable = allConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
                     if (foundation.size == 0)
                     {
                         BoundsSize size = GetSizeFromObjectBounds(activator.ObjectBounds);
@@ -152,7 +152,7 @@ public partial class Export
                 if (property1?.Object.FormKey is not null && linkCache.TryResolve<IStaticGetter>(property1.Object.FormKey, out var stat))
                 {
                     foundation.workshopName = stat.Name?.ToString() ?? "";
-                    foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == stat.FormKey).Any();
+                    foundation.craftable = allConstructibleObjects.Where(co => co.CreatedObject.FormKey == stat.FormKey).Any();
                     if (foundation.size == 0)
                     {
                         BoundsSize size = GetSizeFromObjectBounds(stat.ObjectBounds);
@@ -213,7 +213,7 @@ public partial class Export
                     pole.hasLight =
                         GetScript(activator, "SimSettlementsV2:ObjectReferences:AllowAnimationsDummyScript") is not null
                         && activator.HasKeyword(FormKey.Factory("03037E:Fallout4.esm")); // WorkshopCanBePowered keyword
-                    pole.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
+                    pole.craftable = allConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
                 }
             }
         }
@@ -224,8 +224,10 @@ public partial class Export
 
     private void IndexFurnitureStoreItem(IMiscItemGetter record, UnlockableRequirements? requirements = null)
     {
-        var cobjs = mod.ConstructibleObjects
+        var cobjs = allConstructibleObjects
             .Where(co => co.Components?[0].Component.FormKey == record.FormKey && co.Components?[0].Count == 1);
+
+        Console.WriteLine($"{cobjs.Count()}");
 
         if (cobjs is null || !cobjs.Any()) return;
         var cobj = cobjs?.First();
