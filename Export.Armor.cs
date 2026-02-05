@@ -4,7 +4,7 @@ namespace SS2Scraper;
 
 public partial class Export
 {
-    private void IndexArmor(IArmorGetter record)
+    private void IndexArmor(IArmorGetter record, UnlockableRequirements? requirements)
     {
         if (
             record.VirtualMachineAdapter is null
@@ -18,11 +18,11 @@ public partial class Export
             switch (script.Name.ToLower().Trim('\0'))
             {
                 case "simsettlementsv2:armors:themedefinition_flags":
-                    IndexDynamicFlag(record, new());
+                    IndexDynamicFlag(record, requirements);
                     continue;
 
                 case "simsettlementsv2:armors:npcunittype":
-                    IndexUnitType(record, new());
+                    IndexUnitType(record, requirements);
                     continue;
 
                 default:
@@ -31,7 +31,7 @@ public partial class Export
             }
         }
     }
-    private void IndexDynamicFlag(IArmorGetter record, UnlockableRequirements requirements)
+    private void IndexDynamicFlag(IArmorGetter record, UnlockableRequirements? requirements)
     {
         DynamicFlag flag = new()
         {
@@ -57,7 +57,7 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexUnitType(IArmorGetter record, UnlockableRequirements requirements)
+    private void IndexUnitType(IArmorGetter record, UnlockableRequirements? requirements)
     {
         UnitType unitType = new()
         {

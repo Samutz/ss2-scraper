@@ -6,7 +6,7 @@ namespace SS2Scraper;
 
 public partial class Export
 {
-    public void IndexWeapon(IWeaponGetter record)
+    public void IndexWeapon(IWeaponGetter record, UnlockableRequirements? requirements = null)
     {
         if (
             record.VirtualMachineAdapter is null
@@ -20,15 +20,15 @@ public partial class Export
             switch (script.Name.ToLower().Trim('\0'))
             {
                 case "simsettlementsv2:weapons:buildingplan":
-                    IndexBuildingPlan(record, new());
+                    IndexBuildingPlan(record, requirements);
                     continue;
 
                 case "simsettlementsv2:weapons:buildingskin":
-                    IndexBuildingSkin(record);
+                    IndexBuildingSkin(record, requirements);
                     continue;
 
                 case "simsettlementsv2:weapons:leadercard":
-                    IndexLeaderCard(record);
+                    IndexLeaderCard(record, requirements);
                     continue;
 
                 default:
@@ -38,7 +38,7 @@ public partial class Export
         }
     }
 
-    private void IndexBuildingPlan(IWeaponGetter record, UnlockableRequirements requirements)
+    private void IndexBuildingPlan(IWeaponGetter record, UnlockableRequirements? requirements = null)
     {
         BuildingPlan buildingPlan = new()
         {
@@ -148,13 +148,14 @@ public partial class Export
         output.totalItems++;
     }
 
-    private BuildingLevelPlan? IndexBuildingLevelPlan(IWeaponGetter record)
+    private BuildingLevelPlan? IndexBuildingLevelPlan(IWeaponGetter record, UnlockableRequirements? requirements = null)
     {
         BuildingLevelPlan buildingLevelPlan = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
-            name = record.Name?.ToString() ?? ""
+            name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         // Console.WriteLine($"Found AddonItem BuildingLevelPlan: {weapon.EditorID}");
@@ -217,13 +218,14 @@ public partial class Export
         return buildingLevelPlan;
     }
 
-    private void IndexLeaderCard(IWeaponGetter record)
+    private void IndexLeaderCard(IWeaponGetter record, UnlockableRequirements? requirements = null)
     {
         LeaderCard leaderCard = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         var script = GetScript(record, "SimSettlementsV2:Weapons:LeaderCard");
@@ -289,12 +291,11 @@ public partial class Export
             }
         }
 
-
         output.leaderCards.Add(leaderCard);
         output.totalItems++;
     }
 
-    private void IndexBuildingSkin(IWeaponGetter record)
+    private void IndexBuildingSkin(IWeaponGetter record, UnlockableRequirements? requirements = null)
     {
         var script = GetScript(record, "SimSettlementsV2:Weapons:BuildingSkin");
         if (script is null) return;
@@ -310,6 +311,7 @@ public partial class Export
             editorId = record.EditorID?.ToString() ?? "",
             targetPlan = planKey?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         var isPlayerSelectOnly = GetScriptProperty(script, "bPlayerSelectOnly") as ScriptBoolProperty;

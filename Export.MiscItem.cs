@@ -7,7 +7,7 @@ namespace SS2Scraper;
 
 public partial class Export
 {
-    private void IndexMiscItem(IMiscItemGetter record, IKeywordGetter? formListKeyword)
+    private void IndexMiscItem(IMiscItemGetter record, IKeywordGetter? formListKeyword = null, UnlockableRequirements? requirements = null)
     {
         // pet names, doesn't use script
         if (record.HasKeyword(FormKey.Factory("01F43E:SS2.esm"))) IndexBaseItem(record, output.petNames);
@@ -28,19 +28,19 @@ public partial class Export
                     continue;
 
                 case "simsettlementsv2:miscobjects:foundation":
-                    IndexFoundation(record, formListKeyword);
+                    IndexFoundation(record, formListKeyword, requirements);
                     continue;
 
                 case "simsettlementsv2:miscobjects:powerpole":
-                    IndexPowerPole(record, formListKeyword);
+                    IndexPowerPole(record, formListKeyword, requirements);
                     continue;
 
                 case "simsettlementsv2:miscobjects:furniturestoreitem":
-                    IndexFurnitureStoreItem(record);
+                    IndexFurnitureStoreItem(record, requirements);
                     continue;
 
                 case "simsettlementsv2:miscobjects:petstorecreatureitem":
-                    IndexPetStoreCreature(record);
+                    IndexPetStoreCreature(record, requirements);
                     continue;
 
                 case "simsettlementsv2:miscobjects:unlockablecharacter":
@@ -56,19 +56,19 @@ public partial class Export
                     continue;
 
                 case "simsettlementsv2:weapons:cityplan":
-                    IndexCityPlan(record);
+                    IndexCityPlan(record, requirements);
                     continue;
 
                 case "simsettlementsv2:miscobjects:worldrepopulationcell":
-                    IndexWorldPopulationCell(record);
+                    IndexWorldPopulationCell(record, requirements);
                     continue;
 
                 case "simsettlementsv2:hq:library:miscobjects:requirementtypes:actiontypes:hqroomconfig":
-                    IndexHQRoomConfig(record);
+                    IndexHQRoomConfig(record, requirements);
                     continue;
 
                 case "simsettlementsv2:hq:baseactiontypes:hqroomupgrade":
-                    IndexHQRoomUpgrade(record);
+                    IndexHQRoomUpgrade(record, requirements);
                     continue;
 
                 case "simsettlementsv2:miscobjects:settlerlocationdiscovery":
@@ -97,7 +97,7 @@ public partial class Export
         IndexBuildingPlan(weapon, requirements);
     }
 
-    private void IndexFoundation(IMiscItemGetter record, IKeywordGetter? formListKeyword)
+    private void IndexFoundation(IMiscItemGetter record, IKeywordGetter? formListKeyword = null, UnlockableRequirements? requirements = null)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:Foundation");
 
@@ -108,6 +108,7 @@ public partial class Export
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         if (formListKeyword is not null)
@@ -138,7 +139,7 @@ public partial class Export
                 {
                     foundation.workshopName = activator.Name?.ToString() ?? "";
                     foundation.terraformer = activator.HasKeyword(FormKey.Factory("0193F8:SS2.esm")); // terraformer keyword
-                    foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
+                    foundation.craftable = allConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
                     if (foundation.size == 0)
                     {
                         BoundsSize size = GetSizeFromObjectBounds(activator.ObjectBounds);
@@ -151,7 +152,7 @@ public partial class Export
                 if (property1?.Object.FormKey is not null && linkCache.TryResolve<IStaticGetter>(property1.Object.FormKey, out var stat))
                 {
                     foundation.workshopName = stat.Name?.ToString() ?? "";
-                    foundation.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == stat.FormKey).Any();
+                    foundation.craftable = allConstructibleObjects.Where(co => co.CreatedObject.FormKey == stat.FormKey).Any();
                     if (foundation.size == 0)
                     {
                         BoundsSize size = GetSizeFromObjectBounds(stat.ObjectBounds);
@@ -167,7 +168,7 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexPowerPole(IMiscItemGetter record, IKeywordGetter? formListKeyword)
+    private void IndexPowerPole(IMiscItemGetter record, IKeywordGetter? formListKeyword = null, UnlockableRequirements? requirements = null)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:PowerPole");
 
@@ -178,6 +179,7 @@ public partial class Export
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         if (formListKeyword is not null)
@@ -211,7 +213,7 @@ public partial class Export
                     pole.hasLight =
                         GetScript(activator, "SimSettlementsV2:ObjectReferences:AllowAnimationsDummyScript") is not null
                         && activator.HasKeyword(FormKey.Factory("03037E:Fallout4.esm")); // WorkshopCanBePowered keyword
-                    pole.craftable = mod.ConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
+                    pole.craftable = allConstructibleObjects.Where(co => co.CreatedObject.FormKey == activator.FormKey).Any();
                 }
             }
         }
@@ -220,10 +222,12 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexFurnitureStoreItem(IMiscItemGetter record)
+    private void IndexFurnitureStoreItem(IMiscItemGetter record, UnlockableRequirements? requirements = null)
     {
-        var cobjs = mod.ConstructibleObjects
+        var cobjs = allConstructibleObjects
             .Where(co => co.Components?[0].Component.FormKey == record.FormKey && co.Components?[0].Count == 1);
+
+        Console.WriteLine($"{cobjs.Count()}");
 
         if (cobjs is null || !cobjs.Any()) return;
         var cobj = cobjs?.First();
@@ -234,7 +238,8 @@ public partial class Export
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "", // shop item name
             description = cobj?.Description?.ToString() ?? "",
-            value = record.Value
+            value = record.Value,
+            requirements = requirements
         };
 
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:FurnitureStoreItem");
@@ -298,14 +303,15 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexPetStoreCreature(IMiscItemGetter record)
+    private void IndexPetStoreCreature(IMiscItemGetter record, UnlockableRequirements? requirements = null)
     {
         PetStoreCreature storeItem = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "", // shop item name
-            value = record.Value
+            value = record.Value,
+            requirements = requirements
         };
 
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:PetStoreCreatureItem");
@@ -319,7 +325,7 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexWorldPopulationCell(IMiscItemGetter record)
+    private void IndexWorldPopulationCell(IMiscItemGetter record, UnlockableRequirements? requirements = null)
     {
         var script = GetScript(record, "SimSettlementsV2:MiscObjects:WorldRepopulationCell");
         if (script is null) return;
@@ -328,7 +334,8 @@ public partial class Export
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
-            name = record.Name?.ToString() ?? ""
+            name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         var iPopulationSupported = GetScriptProperty(script, "iPopulationSupported") as ScriptIntProperty;
@@ -344,7 +351,7 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexCityPlan(IMiscItemGetter record)
+    private void IndexCityPlan(IMiscItemGetter record, UnlockableRequirements? requirements = null)
     {
         var script = GetScript(record, "SimSettlementsV2:Weapons:CityPlan");
         if (script is null) return;
@@ -353,7 +360,8 @@ public partial class Export
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
-            name = record.Name?.ToString() ?? ""
+            name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         var maxLevel = GetScriptProperty(script, "iLevelCount") as ScriptIntProperty;
@@ -390,14 +398,15 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexHQRoomConfig(IMiscItemGetter record)
+    private void IndexHQRoomConfig(IMiscItemGetter record, UnlockableRequirements? requirements = null)
     {
         HQRoom room = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
-            type = "config"
+            type = "config",
+            requirements = requirements
         };
 
         if (record.Keywords is not null && record.Keywords.Count > 0)
@@ -431,13 +440,14 @@ public partial class Export
         output.totalItems++;
     }
 
-    private void IndexHQRoomUpgrade(IMiscItemGetter record)
+    private void IndexHQRoomUpgrade(IMiscItemGetter record, UnlockableRequirements? requirements = null)
     {
         HQRoom room = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         if (record.HasKeyword(FormKey.Factory("04B2F3:SS2.esm"))) room.type = "construction";
@@ -503,12 +513,15 @@ public partial class Export
         if (!linkCache.TryResolve<INpcGetter>(property1.Object.FormKey, out var actor)) return;
         if (actor is null) return;
 
+        UnlockableRequirements requirements = GetUnlockableRequirements(script);
+
         UnlockableCharacter character = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             name = actor.Name?.ToString() ?? "",
             targetActor = GetBaseActor(actor),
+            requirements = requirements
         };
 
         output.unlockableCharacters.Add(character);
@@ -569,18 +582,30 @@ public partial class Export
 
     private void IndexRegistrerForms(IScriptEntryGetter script)
     {
+        UnlockableRequirements requirements = GetUnlockableRequirements(script);
+
         var registerForms = GetScriptProperty(script, "RegisterForms") as ScriptStructListProperty;
         if (registerForms?.Structs.Count > 0)
         {
             foreach (ScriptEntryStructs struct1 in registerForms.Structs)
             {
+                FormKey? formToInjectFormKey = null;
+                IKeywordGetter? formListKeywork = null;
                 foreach (ScriptObjectProperty member in struct1.Members.Cast<ScriptObjectProperty>())
                 {
+                    if (
+                        member is not null && member.Name == "TargetFormlistKeyword"
+                         && linkCache.TryResolve<IKeywordGetter>(member.Object.FormKey, out var outKeyword))
+                    {
+                        formListKeywork = outKeyword;
+                    }
+                    
                     if (member is not null && member.Name == "FormToInject")
                     {
-                        IndexAddonItem(member.Object.FormKey, null);
+                        formToInjectFormKey = member.Object.FormKey;
                     }
                 }
+                if (formToInjectFormKey is not null) IndexAddonItem(formToInjectFormKey, formListKeywork, requirements);
             }
         }
     }

@@ -5,7 +5,7 @@ namespace SS2Scraper;
 
 public partial class Export
 {
-    private void IndexBook(IBookGetter record)
+    private void IndexBook(IBookGetter record, UnlockableRequirements? requirements = null)
     {
         if (
             record.VirtualMachineAdapter is null
@@ -19,7 +19,7 @@ public partial class Export
             switch (script.Name.ToLower().Trim('\0'))
             {
                 case "simsettlementsv2:books:beerrecipe":
-                    IndexBeerRecipe(record);
+                    IndexBeerRecipe(record, requirements);
                     continue;
 
                 default:
@@ -29,13 +29,14 @@ public partial class Export
         }
     }
 
-    private void IndexBeerRecipe(IBookGetter record)
+    private void IndexBeerRecipe(IBookGetter record, UnlockableRequirements? requirements = null)
     {
         BeerRecipe beerRecipe = new()
         {
             formKey = record.FormKey.ToString(),
             editorId = record.EditorID?.ToString() ?? "",
             recipeName = record.Name?.ToString() ?? "",
+            requirements = requirements
         };
 
         var script = GetScript(record, "SimSettlementsV2:Books:BeerRecipe");
