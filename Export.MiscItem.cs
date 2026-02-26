@@ -227,8 +227,6 @@ public partial class Export
         var cobjs = allConstructibleObjects
             .Where(co => co.Components?[0].Component.FormKey == record.FormKey && co.Components?[0].Count == 1);
 
-        Console.WriteLine($"{cobjs.Count()}");
-
         if (cobjs is null || !cobjs.Any()) return;
         var cobj = cobjs?.First();
 
