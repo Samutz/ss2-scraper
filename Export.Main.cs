@@ -37,14 +37,18 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
         }
 
         IndexAddonItems();
-        IndexHQActionLists();
 
+        // additional items not in normal registration
         switch (mod.ModKey.FileName.ToString())
         {
             case "IDEKsLogisticsStation2.esl":
                 // BPs injected by ILS2's custom quest
                 IndexAddonItem(FormKey.Factory("000BC6:IDEKsLogisticsStation2.esl"));
                 IndexAddonItem(FormKey.Factory("000BCC:IDEKsLogisticsStation2.esl"));
+                break;
+
+            case "SS2_XPAC_Chapter2.esm":
+                IndexHQActionLists();
                 break;
 
             case "SS2_XPAC_Chapter3.esm":
@@ -188,8 +192,6 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
     // SS2 CH2 doesn't register its own HQ items in its addon config
     private void IndexHQActionLists()
     {
-        if (mod.ModKey.FileName != "SS2_XPAC_Chapter2.esm") return;
-
         List<string> listKeys = [
             "027417:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_DefaultActions
             "01F16F:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Basement_DefaultActions
@@ -199,12 +201,18 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             "034DCB:SS2_XPAC_Chapter2.esm", // SS2C2_HQActions_GNN_MQ24RegisterPostTutorial
         ];
 
-        // additional actions that unlock from other means
-        List<string> actionKeys = [
+        // additional items that unlock from other means
+        List<string> itemKeys = [
             "02A71F:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_GNNMainHallQuadrant_MedicalLab
             "027A55:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_MQ_CommArrayRoom 
             "02F553:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_MQ_MakeshiftInfirmary
             "027A54:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomConstruction_MQ_MeetingRoom
+
+            // from SS2C2_MQ26
+            "01F115:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_AssignRoomConfig_GNNMainHallQuadrantShape_MedicalLab
+            "02C270:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomUpgrade_GNNMainHallQuadrant_MedLab_Biologicalresearch
+            "02C27A:SS2_XPAC_Chapter2.esm", // SS2C2_HQGNN_Action_RoomUpgrade_GNNMainHallQuadrant_MedLab_MedicalTanks
+            "02FFDC:SS2_XPAC_Chapter2.esm", // SS2C2_Unlockable_HQDesign_Infirmary_DoNotRegister
         ];
 
         foreach (var listKey in listKeys)
@@ -212,21 +220,13 @@ public partial class Export(IFallout4ModDisposableGetter mod, ILinkCache linkCac
             if (!linkCache.TryResolve<IFormListGetter>(FormKey.Factory(listKey), out var formlist)) continue;
             foreach (var item in formlist.Items)
             {
-                if (linkCache.TryResolve<IMiscItemGetter>(item.FormKey, out var miscItem))
-                {
-                    IndexMiscItem(miscItem);
-                    continue;
-                }
+                IndexAddonItem(item.FormKey);
             }
         }
 
-        foreach (var listKey in actionKeys)
+        foreach (var itemKey in itemKeys)
         {
-            if (linkCache.TryResolve<IMiscItemGetter>(FormKey.Factory(listKey), out var miscItem))
-            {
-                IndexMiscItem(miscItem);
-                continue;
-            }
+            IndexAddonItem(FormKey.Factory(itemKey));
         }
     }
 
