@@ -22,5 +22,8 @@ Loads each plugin and its masters as a load order one at a time. The is the meth
 `-mo2 <modlist.txt-path>`  
 Specifies a modlist.txt from [Mod Organizer 2](https://github.com/ModOrganizer2/modorganizer) to collect Nexus info from the mods' meta.ini files. This file is usually located in `<MO2 folder>\profiles\<profile name>\modlist.txt`.
 
+`-nexus <api-key>`
+If set, the api key will be used to gather more information from the Nexus API. Requires `-mo2` to be set.
+
 # Names / Strings
 In order to get localized names of vanilla/DLC records, the ba2 archives containing those strings must be in the same directory as the plugin.

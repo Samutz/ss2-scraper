@@ -8,6 +8,19 @@ public partial class Export
         public int nexusId = 0;
         public string name = "";
         public string version = "";
+        public NexusData? nexusData;
+    }
+
+    public class NexusData
+    {
+        public string Name = "";
+        public string Summary = "";
+        public string PictureUrl = "";
+        public string Version = "";
+        public int UserId = -1;
+        public string Author = "";
+        public string CreatedTime = "";
+        public string UpdatedTime = "";
     }
 
     public class Output

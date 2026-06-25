@@ -8,12 +8,14 @@ using Mutagen.Bethesda.Plugins.Order;
 using Newtonsoft.Json;
 using IniParser;
 using IniParser.Model;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace SS2Scraper;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         string? filePath = null;
         bool doMO2 = false;
@@ -21,6 +23,8 @@ class Program
         bool doSingleMode = false;
         bool doUnknowns = false;
         string modListPath = "";
+        bool doNexusApi = false;
+        string nexusApiKey = "";
         List<Export.ModMetadata> metadataCache = [];
 
         for (int i = 0; i < args.Length; i++)
@@ -51,6 +55,10 @@ class Program
                     continue;
                 case "-unknowns":
                     doUnknowns = true;
+                    continue;
+                case "-nexus":
+                    doNexusApi = true;
+                    nexusApiKey = nextArg;
                     continue;
             }
         }
@@ -91,8 +99,30 @@ class Program
                         pluginFile = Path.GetFileName(pluginFile),
                         nexusId = nexusId,
                         name = modName,
-                        version = data["General"]["version"]
+                        version = data["General"]["version"],
                     };
+
+                    if (doNexusApi && nexusId > 0)
+                    {
+                        metadata.nexusData ??= new Export.NexusData();
+
+                        NexusApi nexusApi = new(nexusApiKey);
+                        JObject? result = await nexusApi.GetAsync($"games/fallout4/mods/{nexusId}");
+                        if (result is not null)
+                        {
+                            metadata.nexusData.Name = result["name"]?.ToString() ?? "";
+                            metadata.nexusData.Summary = result["summary"]?.ToString() ?? "";
+                            metadata.nexusData.PictureUrl = result["picture_url"]?.ToString() ?? "";
+                            metadata.nexusData.Version = result["version"]?.ToString() ?? "";
+                            metadata.nexusData.UserId = result["user"]?["member_id"]?.Value<int>() ?? -1;
+                            metadata.nexusData.Author = result["author"]?.ToString() ?? "";
+                            metadata.nexusData.CreatedTime = result["created_time"]?.ToString() ?? "";
+                            metadata.nexusData.UpdatedTime = result["updated_time"]?.ToString() ?? "";
+                        }
+
+                        await Task.Delay(34); // lazy rate limiting
+                    }
+
                     metadataCache.Add(metadata);
                 }
             }
